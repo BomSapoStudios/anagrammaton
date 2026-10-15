@@ -23,6 +23,8 @@ final class BubbleNode: SKNode {
             node.verticalAlignmentMode = .center
             node.horizontalAlignmentMode = .center
             node.position = offset
+            // Explicit layers: draw order between siblings at the same z isn't guaranteed.
+            node.zPosition = node === label ? 2 : 1
             addChild(node)
         }
     }
