@@ -65,6 +65,7 @@ final class GameScene: SKScene {
     private var bottomInset: CGFloat = 0
 
     private let trackNode = SKShapeNode()
+    private let trackEdge = SKShapeNode()
     private let holeNode = SKShapeNode(circleOfRadius: 38)
     private let aimLine = SKShapeNode()
     private let shooterBase = SKShapeNode(circleOfRadius: 38)
@@ -72,8 +73,8 @@ final class GameScene: SKScene {
     private lazy var shotNode = BubbleNode(radius: CGFloat(diameter / 2))
     private lazy var upcomingNodes = [BubbleNode(radius: 15), BubbleNode(radius: 15)]
     private var bubbleNodes: [BubbleNode] = []
-    private let hudLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
-    private let messageLabel = SKLabelNode(fontNamed: "AvenirNext-Bold")
+    private let hudLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
+    private let messageLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
     private let backwardButton = ButtonNode(action: "backward", size: CGSize(width: 260, height: 50))
     private let relaxedButton = ButtonNode(action: "relaxed", size: CGSize(width: 230, height: 50))
     private let primaryButton = ButtonNode(action: "next", size: CGSize(width: 260, height: 64))
@@ -99,7 +100,7 @@ final class GameScene: SKScene {
     override init(size: CGSize) {
         words = Self.loadWords()
         super.init(size: size)
-        backgroundColor = UIColor(red: 0.114, green: 0.141, blue: 0.2, alpha: 1)
+        backgroundColor = StoneStyle.rgb(0x1C1E21)
     }
 
     @available(*, unavailable)
@@ -118,19 +119,34 @@ final class GameScene: SKScene {
     }
 
     override func didMove(to view: SKView) {
-        trackNode.strokeColor = UIColor(red: 0.17, green: 0.21, blue: 0.31, alpha: 1)
-        trackNode.lineWidth = CGFloat(diameter * 1.15)
-        trackNode.lineCap = .round
-        trackNode.lineJoin = .round
-        addChild(trackNode)
-        holeNode.fillColor = UIColor(red: 0.04, green: 0.05, blue: 0.08, alpha: 1)
-        holeNode.lineWidth = 0
+        let board = SKSpriteNode(texture: StoneStyle.board(size: size))
+        board.size = size
+        board.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        board.zPosition = -30
+        addChild(board)
+        // The track is a groove cut into the slate: a dark edge around a lighter floor.
+        let grooves: [(SKShapeNode, Double, UIColor)] = [(trackEdge, 1.3, UIColor(white: 0, alpha: 0.5)),
+                                     (trackNode, 1.12, StoneStyle.rgb(0x26282C))]
+        for (node, width, color) in grooves {
+            node.strokeColor = color
+            node.lineWidth = CGFloat(diameter * width)
+            node.lineCap = .round
+            node.lineJoin = .round
+            node.zPosition = node === trackEdge ? -21 : -20
+            addChild(node)
+        }
+        holeNode.fillColor = .black
+        holeNode.strokeColor = StoneStyle.brass
+        holeNode.lineWidth = 4
+        holeNode.zPosition = -19
         addChild(holeNode)
-        aimLine.strokeColor = UIColor(white: 1, alpha: 0.35)
+        aimLine.strokeColor = StoneStyle.cream.withAlphaComponent(0.35)
         aimLine.lineWidth = 3
         addChild(aimLine)
-        shooterBase.fillColor = UIColor(red: 0.24, green: 0.29, blue: 0.42, alpha: 1)
-        shooterBase.lineWidth = 0
+        shooterBase.fillColor = StoneStyle.slate
+        shooterBase.strokeColor = StoneStyle.brass
+        shooterBase.lineWidth = 3
+        shooterBase.zPosition = -19
         addChild(shooterBase)
         addChild(shooterBubble)
         upcomingNodes.forEach { addChild($0) }
@@ -138,6 +154,7 @@ final class GameScene: SKScene {
         addChild(shotNode)
 
         hudLabel.fontSize = 30
+        hudLabel.fontColor = StoneStyle.cream
         hudLabel.horizontalAlignmentMode = .left
         hudLabel.position = scenePoint(Vec2(16, Double(topInset) + 40))
         addChild(hudLabel)
@@ -147,6 +164,7 @@ final class GameScene: SKScene {
         addChild(backwardButton)
         addChild(relaxedButton)
         messageLabel.fontSize = 40
+        messageLabel.fontColor = StoneStyle.cream
         messageLabel.position = CGPoint(x: size.width / 2, y: size.height / 2 + 30)
         addChild(messageLabel)
         primaryButton.position = CGPoint(x: size.width / 2, y: size.height / 2 - 60)
@@ -208,6 +226,7 @@ final class GameScene: SKScene {
         let path = CGMutablePath()
         path.addLines(between: track.points.map(scenePoint))
         trackNode.path = path
+        trackEdge.path = path
         holeNode.position = scenePoint(track.points[track.points.count - 1])
         shooterBase.position = scenePoint(shooter)
         shooterBubble.position = scenePoint(shooter)
@@ -514,10 +533,10 @@ final class GameScene: SKScene {
     }
 
     private func showPopup(_ text: String, at point: Vec2) {
-        let label = SKLabelNode(fontNamed: "AvenirNext-Bold")
+        let label = SKLabelNode(fontNamed: StoneStyle.uiFont)
         label.text = text
         label.fontSize = 30
-        label.fontColor = UIColor(red: 1, green: 0.9, blue: 0.4, alpha: 1)
+        label.fontColor = StoneStyle.rgb(0xF2CF72)
         label.position = scenePoint(point)
         addChild(label)
         label.run(.sequence([
