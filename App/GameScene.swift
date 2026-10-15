@@ -99,6 +99,8 @@ final class GameScene: SKScene {
     private let bannerWord = SKLabelNode(fontNamed: StoneStyle.letterFont)
     private let bannerDetail = SKLabelNode(fontNamed: StoneStyle.uiFont)
     private var bannerPoint = Vec2.zero
+    /// Dims the board behind the end-of-level message so it stays readable.
+    private let overlay = SKSpriteNode(color: UIColor(white: 0, alpha: 0.65), size: .zero)
     private let primaryButton = ButtonNode(action: "next", size: CGSize(width: 260, height: 64))
     private let continueButton = ButtonNode(action: "continue", size: CGSize(width: 260, height: 64))
 
@@ -211,6 +213,14 @@ final class GameScene: SKScene {
         previewLabel.zPosition = 6
         previewLabel.isHidden = true
         addChild(previewLabel)
+        overlay.size = size
+        overlay.position = CGPoint(x: size.width / 2, y: size.height / 2)
+        overlay.zPosition = 20
+        overlay.isHidden = true
+        addChild(overlay)
+        for node in [messageLabel, primaryButton, continueButton] as [SKNode] {
+            node.zPosition = 21
+        }
         messageLabel.fontSize = 40
         messageLabel.fontColor = StoneStyle.cream
         messageLabel.position = CGPoint(x: size.width / 2, y: size.height / 2 + 30)
@@ -603,17 +613,20 @@ final class GameScene: SKScene {
         hintsButton.text = "Hints: \(hintsOn ? "on" : "off")"
         switch state {
         case .playing:
+            overlay.isHidden = true
             messageLabel.isHidden = true
             primaryButton.isHidden = true
             continueButton.isHidden = true
         case .won:
             messageLabel.text = "Level clear!"
+            overlay.isHidden = false
             messageLabel.isHidden = false
             primaryButton.text = "Next level"
             primaryButton.isHidden = false
             continueButton.isHidden = true
         case .lost:
             messageLabel.text = "The chain reached the hole"
+            overlay.isHidden = false
             messageLabel.isHidden = false
             primaryButton.text = "Retry"
             primaryButton.isHidden = false
