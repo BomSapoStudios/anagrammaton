@@ -94,6 +94,11 @@ final class GameScene: SKScene {
     private let hintsButton = ButtonNode(action: "hints", size: CGSize(width: 166, height: 50))
     private var gapMarkers: [BubbleNode] = []
     private let previewLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
+    /// Big word shown the moment it pops, in open space near the track.
+    private let wordBanner = SKNode()
+    private let bannerWord = SKLabelNode(fontNamed: StoneStyle.letterFont)
+    private let bannerDetail = SKLabelNode(fontNamed: StoneStyle.uiFont)
+    private var bannerPoint = Vec2.zero
     private let primaryButton = ButtonNode(action: "next", size: CGSize(width: 260, height: 64))
     private let continueButton = ButtonNode(action: "continue", size: CGSize(width: 260, height: 64))
 
@@ -189,6 +194,18 @@ final class GameScene: SKScene {
             addChild(marker)
             gapMarkers.append(marker)
         }
+        bannerWord.fontSize = 64
+        bannerWord.fontColor = StoneStyle.cream
+        bannerWord.verticalAlignmentMode = .center
+        bannerDetail.fontSize = 28
+        bannerDetail.fontColor = StoneStyle.rgb(0xF2CF72)
+        bannerDetail.verticalAlignmentMode = .center
+        bannerDetail.position = CGPoint(x: 0, y: -50)
+        wordBanner.addChild(bannerWord)
+        wordBanner.addChild(bannerDetail)
+        wordBanner.zPosition = 8
+        wordBanner.alpha = 0
+        addChild(wordBanner)
         previewLabel.fontSize = 34
         previewLabel.fontColor = StoneStyle.rgb(0xF2CF72)
         previewLabel.zPosition = 6
@@ -244,11 +261,14 @@ final class GameScene: SKScene {
             let side = Double(Self.layoutWidth) - 32
             let area = Box(x: 16, y: (height - side) / 2 + 40, width: side, height: side)
             shooter = area.center
+            bannerPoint = Vec2(Double(Self.layoutWidth) / 2, area.y - 70)
             track = generator.generate(.spiral, area: area, shooter: shooter, diameter: diameter)
         } else {
             let top = Double(topInset) + 140
             shooter = Vec2(Double(Self.layoutWidth) / 2, height - Double(bottomInset) - 150)
             let area = Box(x: 0, y: top, width: Double(Self.layoutWidth), height: shooter.y - top - 290)
+            // The open space between the bottom of the track and the shooter.
+            bannerPoint = Vec2(Double(Self.layoutWidth) / 2, shooter.y - 180)
             track = generator.generate(.serpentine, area: area, shooter: shooter, diameter: diameter)
         }
         guard let track else {
@@ -397,6 +417,7 @@ final class GameScene: SKScene {
             size -= event.removed.count
             showPopup(describe(event), at: position + Vec2(0, -50 - 44 * Double(k)))
         }
+        showWordBanner(events)
         if events.isEmpty {
             score.recordMiss()
         }
@@ -709,6 +730,27 @@ final class GameScene: SKScene {
             text += " chain x\(event.depth + 1)"
         }
         return "\(text) +\(event.points)"
+    }
+
+    /// Shows the words a shot spelled, large, right as they pop.
+    private func showWordBanner(_ events: [PopEvent]) {
+        let spelled = events.compactMap { $0.kind == .word ? $0.word?.uppercased() : nil }
+        guard !spelled.isEmpty else { return }
+        bannerWord.text = spelled.joined(separator: " + ")
+        // Long chains of words shrink to fit the screen.
+        let width = max(bannerWord.frame.width / max(bannerWord.xScale, 0.01), 1)
+        bannerWord.setScale(min(1, (size.width - 40) / width))
+        let points = events.reduce(0) { $0 + $1.points }
+        bannerDetail.text = events.count > 1 ? "+\(points)  chain x\(events.count)" : "+\(points)"
+        wordBanner.position = scenePoint(bannerPoint)
+        wordBanner.removeAllActions()
+        wordBanner.alpha = 1
+        wordBanner.setScale(0.6)
+        wordBanner.run(.sequence([
+            .scale(to: 1, duration: 0.15),
+            .wait(forDuration: 1.6),
+            .fadeOut(withDuration: 0.5),
+        ]))
     }
 
     private func showPopup(_ text: String, at point: Vec2) {
