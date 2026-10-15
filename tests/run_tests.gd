@@ -82,6 +82,13 @@ func test_words() -> void:
 	check(events.size() == 1 and events[0]["backward"] and events[0]["word"] == "bacon", "backward word pops when enabled")
 	letters = chars("bacon")
 	check(Rules.resolve(letters, 5, 5, w, false).is_empty(), "out-of-range anchor is ignored")
+	# On a row moving right to left, NOCAB in travel order shows as BACON.
+	var always := func(_a: int, _b: int) -> bool: return true
+	letters = chars("nocab")
+	events = Rules.resolve(letters, 2, 2, w, false, always)
+	check(events.size() == 1 and events[0]["word"] == "bacon" and not events[0]["backward"], "screen order reads flipped rows")
+	letters = chars("bacon")
+	check(Rules.resolve(letters, 2, 2, w, false, always).is_empty(), "flipped row hides travel-order word")
 
 
 func test_chain_reactions() -> void:
@@ -134,6 +141,8 @@ func test_dealer() -> void:
 	var dealer := LetterDealer.new(w, 1)
 	var useful := dealer.useful_letters(chars("qcrnez"))
 	check(useful.has("a"), "stem CRNE needs A")
+	var always := func(_a: int, _b: int) -> bool: return true
+	check(dealer.useful_letters(chars("qenrcz"), always).has("a"), "flipped stem ENRC needs A")
 	useful = dealer.useful_letters(chars("qxxz"))
 	check(useful.has("x"), "pair XX needs X")
 	dealer.help_rate = 1.0

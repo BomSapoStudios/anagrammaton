@@ -54,6 +54,9 @@ var shot: Dictionary = {}
 var popups: Array = []
 var state := PLAYING
 var allow_backward := false
+## Words read left to right (or top to bottom) as they look on screen. When
+## false they read in the direction the chain travels.
+var screen_order := true
 var relaxed := false
 var aiming := false
 var continues_used := 0
@@ -160,7 +163,7 @@ func _land(hit: int, pos: Vector2) -> void:
 	head_s += D
 	shot = {}
 	var size := letters.size()
-	var events := Rules.resolve(letters, index, index, words, allow_backward)
+	var events := Rules.resolve(letters, index, index, words, allow_backward, _flips())
 	score.score_shot(events)
 	for k in events.size():
 		var event: Dictionary = events[k]
@@ -192,6 +195,19 @@ func _check_end() -> void:
 	elif letters.is_empty() and queue.is_empty() and shot.is_empty():
 		state = WON
 		Ads.level_completed()
+
+
+func _flips() -> Callable:
+	return _reads_flipped if screen_order else Callable()
+
+
+## True when chain indices start..end run right to left (or bottom to top)
+## on screen, so screen-order reading is the reverse of travel order.
+func _reads_flipped(start: int, end: int) -> bool:
+	var delta := track.position_at(_bubble_s(end)) - track.position_at(_bubble_s(start))
+	if absf(delta.x) >= absf(delta.y):
+		return delta.x < 0.0
+	return delta.y < 0.0
 
 
 func _bubble_s(i: int) -> float:
@@ -275,7 +291,7 @@ func _fire() -> void:
 		return
 	shot = {"pos": shooter, "vel": aim * SHOT_SPEED, "letter": current}
 	current = upcoming.pop_front()
-	upcoming.append(dealer.deal(letters, alphabet))
+	upcoming.append(dealer.deal(letters, alphabet, _flips()))
 
 
 func _swap() -> void:

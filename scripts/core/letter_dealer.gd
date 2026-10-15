@@ -28,8 +28,9 @@ func _init(words: WordList, seed_value: int = 0) -> void:
 
 
 ## Letters that would pop something if shot into the right spot, mapped to
-## the chain index of the handle nearest the hole.
-func useful_letters(letters: Array) -> Dictionary:
+## the chain index of the handle nearest the hole. `flips` is the same
+## screen-direction callable chain_rules.gd takes.
+func useful_letters(letters: Array, flips: Callable = Callable()) -> Dictionary:
 	var out: Dictionary = {}
 	var n := letters.size()
 	for i in range(n - 1):
@@ -38,6 +39,8 @@ func useful_letters(letters: Array) -> Dictionary:
 	var text := "".join(PackedStringArray(letters))
 	for i in range(n - 3):
 		var stem := text.substr(i, 4)
+		if flips.is_valid() and flips.call(i, i + 3):
+			stem = WordList.reverse_string(stem)
 		for pos in range(5):
 			for c in ALPHABET:
 				if _words.is_seed(stem.substr(0, pos) + c + stem.substr(pos)):
@@ -45,8 +48,8 @@ func useful_letters(letters: Array) -> Dictionary:
 	return out
 
 
-func deal(letters: Array, alphabet: String) -> String:
-	var useful := useful_letters(letters)
+func deal(letters: Array, alphabet: String, flips: Callable = Callable()) -> String:
+	var useful := useful_letters(letters, flips)
 	if not useful.is_empty() and (rng.randf() < help_rate or _dry_streak >= pity_limit):
 		_dry_streak = 0
 		return _pick_urgent(useful, letters.size())
