@@ -118,6 +118,25 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(keeper.combo, 0)
     }
 
+    func testCommonFourLetterWordsPop() {
+        let words = smallWords()
+        words.addSeedWords(["tree"])
+        words.addPopWords(["toea"])
+        XCTAssertTrue(words.isWord("tree"))
+        XCTAssertTrue(words.isCommon("tree"))
+        XCTAssertFalse(words.isWord("toea"), "4-letter words pop only when common")
+        var letters = chars("xtreex")
+        let events = ChainRules.resolve(&letters, requiredLow: 3, requiredHigh: 3, words: words, allowBackward: false)
+        XCTAssertEqual(events.map(\.word), ["tree"])
+    }
+
+    func testDealerFindsFourLetterStems() {
+        let words = smallWords()
+        words.addSeedWords(["tree"])
+        let dealer = LetterDealer(words: words, seed: 1)
+        XCTAssertNotNil(dealer.usefulLetters(chars("qtrez"))["e"])
+    }
+
     // MARK: Hints
 
     func testWordSpotsFindWhereALetterFits() {
@@ -240,6 +259,8 @@ final class CoreTests: XCTestCase {
         XCTAssertGreaterThan(words.seedWords.count, 400)
         XCTAssertTrue(words.isWord("bacon"))
         XCTAssertTrue(words.isWord("xylyl"), "obscure words pop")
+        XCTAssertTrue(words.isWord("tree"), "common 4-letter words pop")
+        XCTAssertFalse(words.isWord("toea"), "obscure 4-letter words don't")
         var letters = Array("antidisestablishmentarianis")
         letters.append("m")
         let events = ChainRules.resolve(&letters, requiredLow: 27, requiredHigh: 27, words: words, allowBackward: false)

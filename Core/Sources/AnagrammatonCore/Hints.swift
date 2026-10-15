@@ -5,7 +5,7 @@ public struct WordSpot: Equatable {
     public var word: String
     /// Chain indices (before the insert) of the existing bubbles the word uses.
     public var bubbles: ClosedRange<Int>?
-    /// True when the word is on the common (seeding) list.
+    /// True when the word is on the common list.
     public var common: Bool
 }
 
@@ -43,7 +43,7 @@ public enum Hints {
         let low = pop.start
         let high = pop.end - 1
         return WordSpot(insertIndex: index, word: word, bubbles: low <= high ? low...high : nil,
-                        common: words.isSeed(word))
+                        common: words.isCommon(word))
     }
 
     /// What a shot landing at `index` would do, without changing the chain.

@@ -35,19 +35,20 @@ public final class LetterDealer {
                 mark(&out, letters[i], i + 1)
             }
         }
-        if n >= 4 {
-            for i in 0...(n - 4) {
-                var stem = Array(letters[i..<(i + 4)])
-                if let flips, flips(i, i + 3, n) {
+        // Stems one letter short of a common word, for every word length.
+        for length in (WordList.minWordLength - 1)..<WordList.minDictionaryLength where n >= length {
+            for i in 0...(n - length) {
+                var stem = Array(letters[i..<(i + length)])
+                if let flips, flips(i, i + length - 1, n) {
                     stem.reverse()
                 }
-                for pos in 0...4 {
+                for pos in 0...length {
                     for c in Self.alphabet {
                         var candidate = stem
                         candidate.insert(c, at: pos)
-                        if words.isSeed(String(candidate))
-                            || (allowBackward && words.isSeed(String(candidate.reversed()))) {
-                            mark(&out, c, i + 3)
+                        if words.isCommon(String(candidate))
+                            || (allowBackward && words.isCommon(String(candidate.reversed()))) {
+                            mark(&out, c, i + length - 1)
                         }
                     }
                 }
