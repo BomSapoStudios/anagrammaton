@@ -51,12 +51,33 @@ jobs:
           ')
           xcrun simctl boot "$UDID"
           xcrun simctl bootstatus "$UDID" -b
+          # Let SpringBoard settle after a first boot before launching.
+          sleep 20
           xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Anagrammaton.app
           mkdir -p screenshots
           for LEVEL in 1 4; do
-            xcrun simctl launch --terminate-running-process "$UDID" com.bomsapostudios.anagrammaton -autoplayLevel "$LEVEL"
+            LAUNCH=$(xcrun simctl launch --terminate-running-process "$UDID" com.bomsapostudios.anagrammaton -autoplayLevel "$LEVEL" 2>&1)
+            echo "::notice::level $LEVEL launch: $LAUNCH"
             sleep 15
-            xcrun simctl io "$UDID" screenshot "screenshots/level$LEVEL.png"
+            if xcrun simctl spawn "$UDID" launchctl list | grep -qi anagrammaton; then
+              echo "::notice::level $LEVEL: app still running"
+            else
+              echo "::warning::level $LEVEL: app is not running"
+            fi
+            xcrun simctl io "$UDID" screenshot "screenshots/level$LEVEL.png" 2>&1 | tail -1
+          done
+          echo "::notice::screenshots: $(ls screenshots | tr '\n' ' ')"
+          # Summarise any crash report as an annotation.
+          for REPORT in $(ls ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i anagrammaton); do
+            python3 - "$HOME/Library/Logs/DiagnosticReports/$REPORT" <<'PY'
+          import json, sys
+          text = open(sys.argv[1]).read()
+          body = json.loads(text[text.index("\n") + 1:])
+          exc = body.get("exception", {})
+          thread = next((t for t in body.get("threads", []) if t.get("triggered")), {})
+          frames = [f.get("symbol", "?") for f in thread.get("frames", [])[:8]]
+          print("::error::crash " + str(exc.get("type")) + " " + str(body.get("termination", {}).get("indicator", "")) + " | " + " < ".join(frames))
+          PY
           done
       - uses: actions/upload-artifact@v4
         if: always()
