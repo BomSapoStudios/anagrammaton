@@ -15,6 +15,10 @@ import SwiftUI
 /// Words count in both directions, so a word never stops working because
 /// the chain turned a corner.
 ///
+/// Goal: clear every bubble, or spell the level's hidden word, which ends the
+/// level at once with a bonus for every bubble left. Copies of the word with
+/// one letter missing are planted in the chain, and hints mark them in cyan.
+///
 /// Hints: bubbles that the shooter's letter can turn into a common word glow,
 /// with a small copy of the letter in the gap it belongs in. While aiming,
 /// the bubbles the shot would pop light up and the word is shown.
@@ -30,6 +34,11 @@ final class GameScene: SKScene {
     let introFraction = 0.3
     let continuePushback = 0.35
     let rotatingShooterFromLevel = 4
+    /// Placeholder hidden message, one word per level, until the real one is
+    /// written. Every word must be 4+ letters and pop on its own.
+    let placeholderMessage = ["listen", "trust", "this", "voice", "follow", "where", "water", "meets", "stone", "home"]
+    /// Points per bubble still on the board when the hidden word is spelled.
+    let earlyFinishBonus = 10
     /// Letters ordered by English frequency; a level's alphabet is a prefix.
     let frequencyOrder = Array("etaoinsrhldcumfpgwybvkxjqz")
 
@@ -55,6 +64,8 @@ final class GameScene: SKScene {
     private var upcoming: [Character] = []
     private var shot: (position: Vec2, velocity: Vec2, letter: Character)?
     private var state = State.playing
+    private var targetWord = ""
+    private var foundTarget = false
     /// Always on: words spell forward or backward wherever the chain runs.
     private let allowBackward = true
     private var relaxed = false
@@ -89,6 +100,7 @@ final class GameScene: SKScene {
     private lazy var upcomingNodes = [BubbleNode(radius: 15), BubbleNode(radius: 15)]
     private var bubbleNodes: [BubbleNode] = []
     private let hudLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
+    private let targetLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
     private let messageLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
     private let relaxedButton = ButtonNode(action: "relaxed", size: CGSize(width: 230, height: 50))
     private let hintsButton = ButtonNode(action: "hints", size: CGSize(width: 166, height: 50))
@@ -177,6 +189,11 @@ final class GameScene: SKScene {
         shotNode.isHidden = true
         addChild(shotNode)
 
+        targetLabel.fontSize = 30
+        targetLabel.fontColor = StoneStyle.rgb(0x7FE3F0)
+        targetLabel.horizontalAlignmentMode = .right
+        targetLabel.position = scenePoint(Vec2(Double(Self.layoutWidth) - 16, Double(topInset) + 40))
+        addChild(targetLabel)
         hudLabel.fontSize = 30
         hudLabel.fontColor = StoneStyle.cream
         hudLabel.horizontalAlignmentMode = .left
@@ -245,11 +262,15 @@ final class GameScene: SKScene {
         let generator = ChainGenerator(words: words, seed: seed)
         generator.alphabet = alphabet
         generator.handlesPerBlock = Int(lerp(3, 1, t).rounded())
+        targetWord = placeholderMessage[(n - 1) % placeholderMessage.count]
+        foundTarget = false
+        generator.targetWord = targetWord
         queue = generator.generate(count: Int(lerp(50, 120, t).rounded()))
         dealer = LetterDealer(words: words, seed: seed &+ 2)
         dealer.helpRate = lerp(0.8, 0.4, t)
         dealer.pityLimit = Int(lerp(2, 4, t).rounded())
         dealer.allowBackward = allowBackward
+        dealer.targetWord = targetWord
         chainSpeed = lerp(40, 90, t)
         letters = []
         headS = 0
@@ -428,13 +449,21 @@ final class GameScene: SKScene {
             showPopup(describe(event), at: position + Vec2(0, -50 - 44 * Double(k)))
         }
         showWordBanner(events)
+        if events.contains(where: { $0.kind == .word && ($0.word ?? "").contains(targetWord) }) {
+            // The hidden word was heard: the level ends now, and every
+            // bubble left on the board is worth a bonus.
+            foundTarget = true
+            score.addBonus(earlyFinishBonus * (letters.count + queue.count))
+            state = .won
+            ads.levelCompleted()
+        }
         if events.isEmpty {
             score.recordMiss()
         }
     }
 
     private func checkEnd() {
-        guard let track else { return }
+        guard state == .playing, let track else { return }
         if !letters.isEmpty && headS >= track.length {
             state = .lost
         } else if letters.isEmpty && queue.isEmpty && shot == nil {
@@ -609,6 +638,10 @@ final class GameScene: SKScene {
             hud += "    Combo \(score.combo)"
         }
         hudLabel.text = hud
+        // Blanks until it is spelled; then the word itself.
+        targetLabel.text = foundTarget
+            ? targetWord.uppercased()
+            : "Word: " + Array(repeating: "_", count: targetWord.count).joined(separator: " ")
         relaxedButton.text = "Relaxed: \(relaxed ? "on" : "off")"
         hintsButton.text = "Hints: \(hintsOn ? "on" : "off")"
         switch state {
@@ -618,7 +651,7 @@ final class GameScene: SKScene {
             primaryButton.isHidden = true
             continueButton.isHidden = true
         case .won:
-            messageLabel.text = "Level clear!"
+            messageLabel.text = foundTarget ? "You heard it: \(targetWord.uppercased())" : "Level clear!"
             overlay.isHidden = false
             messageLabel.isHidden = false
             primaryButton.text = "Next level"
@@ -650,9 +683,10 @@ final class GameScene: SKScene {
             marker.isHidden = false
             marker.show(current)
             marker.position = scenePoint(track.position(at: s))
+            marker.glow = isTarget(spot) ? .target : .none
             if let bubbles = spot.bubbles {
                 for i in bubbles where i < glow.count {
-                    glow[i] = .hint
+                    glow[i] = isTarget(spot) ? .target : .hint
                 }
             }
         }
@@ -699,12 +733,17 @@ final class GameScene: SKScene {
         }
         hintKey = (letters, current, next, allowBackward)
         let flips = flipTest()
-        hintSpots = Hints.wordSpots(for: current, in: letters, words: words, allowBackward: allowBackward,
-                                    flips: flips).filter(\.common)
+        // The hidden word is always hinted, first, even when it isn't common.
+        let spots = Hints.wordSpots(for: current, in: letters, words: words, allowBackward: allowBackward, flips: flips)
+        hintSpots = spots.filter { isTarget($0) } + spots.filter { $0.common && !isTarget($0) }
         nextLetterHasSpots = next.map {
             Hints.wordSpots(for: $0, in: letters, words: words, allowBackward: allowBackward, flips: flips)
-                .contains(where: \.common)
+                .contains(where: { $0.common || isTarget($0) })
         } ?? false
+    }
+
+    private func isTarget(_ spot: WordSpot) -> Bool {
+        !targetWord.isEmpty && spot.word.contains(targetWord)
     }
 
     private func previewPops(inserting letter: Character, at index: Int) -> [PopEvent] {

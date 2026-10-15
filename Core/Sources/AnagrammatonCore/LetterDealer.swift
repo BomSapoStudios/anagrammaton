@@ -15,6 +15,10 @@ public final class LetterDealer {
     public var pityLimit = 2
     /// Also count stems that spell a word read the other way.
     public var allowBackward = false
+    /// The level's hidden word. When the chain holds it with one letter
+    /// missing, the dealer often hands over that letter.
+    public var targetWord: String?
+    public var targetRate = 0.5
 
     private let words: WordList
     private var rng: SeededGenerator
@@ -58,6 +62,10 @@ public final class LetterDealer {
     }
 
     public func deal(_ letters: [Character], alphabet: [Character], flips: FlipTest? = nil) -> Character {
+        if let missing = targetLetter(letters), rng.unit() < targetRate {
+            dryStreak = 0
+            return missing
+        }
         let useful = usefulLetters(letters, flips: flips)
         if !useful.isEmpty && (rng.unit() < helpRate || dryStreak >= pityLimit) {
             dryStreak = 0
@@ -84,6 +92,28 @@ public final class LetterDealer {
             }
         }
         return pool.last ?? "e"
+    }
+
+    /// The letter that would complete the target word somewhere in the chain,
+    /// preferring the spot nearest the hole.
+    public func targetLetter(_ letters: [Character]) -> Character? {
+        guard let target = targetWord.map({ Array($0) }), target.count >= 2, letters.count >= target.count - 1 else {
+            return nil
+        }
+        let length = target.count - 1
+        for i in stride(from: letters.count - length, through: 0, by: -1) {
+            let window = Array(letters[i..<(i + length)])
+            for reading in allowBackward ? [window, Array(window.reversed())] : [window] {
+                for pos in 0..<target.count {
+                    var stem = target
+                    let missing = stem.remove(at: pos)
+                    if stem == reading {
+                        return missing
+                    }
+                }
+            }
+        }
+        return nil
     }
 
     private func mark(_ out: inout [Character: Int], _ letter: Character, _ index: Int) {

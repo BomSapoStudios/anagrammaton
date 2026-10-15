@@ -16,6 +16,8 @@ final class BubbleNode: SKNode {
         case hint
         /// Would pop if the shot were fired now.
         case pop
+        /// Part of the level's hidden word.
+        case target
     }
 
     var glow = Glow.none {
@@ -32,6 +34,10 @@ final class BubbleNode: SKNode {
                 ring.isHidden = false
                 ring.strokeColor = .white
                 ring.lineWidth = 5
+            case .target:
+                ring.isHidden = false
+                ring.strokeColor = StoneStyle.rgb(0x7FE3F0)
+                ring.lineWidth = 4
             }
         }
     }

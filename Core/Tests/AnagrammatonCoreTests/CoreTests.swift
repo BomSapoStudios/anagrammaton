@@ -137,6 +137,28 @@ final class CoreTests: XCTestCase {
         XCTAssertNotNil(dealer.usefulLetters(chars("qtrez"))["e"])
     }
 
+    func testGeneratorPlantsTargetStems() {
+        let generator = ChainGenerator(words: smallWords(), seed: 3)
+        generator.targetWord = "voice"
+        generator.targetCopies = 3
+        let chain = generator.generate(count: 60)
+        XCTAssertEqual(chain.count, 60)
+        let dealer = LetterDealer(words: smallWords(), seed: 1)
+        dealer.targetWord = "voice"
+        XCTAssertNotNil(dealer.targetLetter(chain), "a planted stem survives sanitizing")
+    }
+
+    func testDealerHandsOverTargetLetter() {
+        let dealer = LetterDealer(words: smallWords(), seed: 1)
+        dealer.targetWord = "voice"
+        dealer.targetRate = 1
+        XCTAssertEqual(dealer.targetLetter(chars("zzvoceqq")), "i")
+        XCTAssertEqual(dealer.deal(chars("zzvoceqq"), alphabet: Array("z")), "i")
+        XCTAssertNil(dealer.targetLetter(chars("zzecovqq")))
+        dealer.allowBackward = true
+        XCTAssertEqual(dealer.targetLetter(chars("zzecovqq")), "i")
+    }
+
     // MARK: Hints
 
     func testWordSpotsFindWhereALetterFits() {

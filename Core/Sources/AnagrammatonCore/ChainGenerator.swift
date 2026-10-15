@@ -8,6 +8,10 @@ public final class ChainGenerator {
 
     public var alphabet: [Character] = Array("etaoinsrhldc")
     public var handlesPerBlock = 2
+    /// The level's hidden word. Copies of it with one letter missing are
+    /// planted along the chain so the player can spell it.
+    public var targetWord: String?
+    public var targetCopies = 3
 
     private let words: WordList
     private var rng: SeededGenerator
@@ -25,8 +29,26 @@ public final class ChainGenerator {
             out.append(contentsOf: makeBlock())
         }
         out = Array(out.prefix(count))
-        sanitize(&out)
+        let protected = plantTarget(&out)
+        sanitize(&out, protected: protected)
         return out
+    }
+
+    /// Writes target stems at evenly spaced spots and returns their indices.
+    private func plantTarget(_ letters: inout [Character]) -> Set<Int> {
+        guard let target = targetWord, target.count >= 2 else { return [] }
+        var protected = Set<Int>()
+        for k in 0..<targetCopies {
+            var stem = Array(target)
+            stem.remove(at: Int.random(in: 0..<stem.count, using: &rng))
+            let start = letters.count * (k + 1) / (targetCopies + 1) - stem.count / 2
+            guard start >= 0, start + stem.count <= letters.count else { continue }
+            for (j, c) in stem.enumerated() {
+                letters[start + j] = c
+                protected.insert(start + j)
+            }
+        }
+        return protected
     }
 
     private func makeBlock() -> [Character] {
@@ -58,9 +80,13 @@ public final class ChainGenerator {
 
     /// Breaks any run of three identical letters and any blocked word by
     /// swapping in a different filler letter.
-    private func sanitize(_ letters: inout [Character]) {
+    private func sanitize(_ letters: inout [Character], protected: Set<Int> = []) {
         for _ in 0..<Self.maxFixPasses {
-            guard let bad = findProblem(letters) else { return }
+            guard let found = findProblem(letters) else { return }
+            // Fix a neighbour instead of a planted target letter.
+            let candidates = [found, found - 1, found + 1, found - 2, found + 2]
+            guard let bad = candidates.first(where: { letters.indices.contains($0) && !protected.contains($0) })
+            else { return }
             let current = letters[bad]
             var replacement = current
             while replacement == current {

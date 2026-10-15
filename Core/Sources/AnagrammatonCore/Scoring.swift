@@ -90,6 +90,11 @@ public final class ScoreKeeper {
         return points
     }
 
+    /// Points earned outside a shot, such as finishing a level early.
+    public func addBonus(_ points: Int) {
+        total += points
+    }
+
     /// A shot that popped nothing breaks the combo.
     public func recordMiss() {
         combo = 0
