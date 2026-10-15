@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  core-tests:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test game rules
+        run: swift test --package-path Core
+
+  app:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - name: Build for the simulator
+        run: |
+          xcodebuild -project Anagrammaton.xcodeproj -scheme Anagrammaton \
+            -sdk iphonesimulator -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO -quiet build
+      - name: Play levels 1 and 4 and take screenshots
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          for runtime in sorted(devices, reverse=True):
+              if "iOS" in runtime:
+                  phones = [d for d in devices[runtime] if d["name"].startswith("iPhone")]
+                  if phones:
+                      print(phones[0]["udid"]); break
+          ')
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Anagrammaton.app
+          mkdir -p screenshots
+          for LEVEL in 1 4; do
+            xcrun simctl launch --terminate-running-process "$UDID" com.bomsapostudios.anagrammaton -autoplayLevel "$LEVEL"
+            sleep 15
+            xcrun simctl io "$UDID" screenshot "screenshots/level$LEVEL.png"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xcode-project
+          path: Anagrammaton.xcodeproj
