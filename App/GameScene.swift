@@ -11,7 +11,12 @@ import SwiftUI
 /// where y points up.
 ///
 /// Controls: drag to aim and release to fire. Tap the shooter to swap
-/// letters. The buttons at the top toggle backward words and relaxed mode.
+/// letters. The buttons at the top toggle backward words, relaxed mode and
+/// word hints.
+///
+/// Hints: bubbles that the shooter's letter can turn into a common word glow,
+/// with a small copy of the letter in the gap it belongs in. While aiming,
+/// the bubbles the shot would pop light up and the word is shown.
 final class GameScene: SKScene {
     enum State {
         case playing, won, lost
@@ -54,6 +59,14 @@ final class GameScene: SKScene {
     /// Words read left to right (or top to bottom) as they look on screen.
     private var screenOrder = true
     private var aiming = false
+    private var hintsOn = true
+    /// Hints show at most this many spots, nearest the hole first.
+    let maxHintSpots = 3
+    private var hintSpots: [WordSpot] = []
+    private var nextLetterHasSpots = false
+    private var hintKey: (letters: [Character], current: Character, next: Character?, backward: Bool)?
+    private var previewKey: (letters: [Character], letter: Character, index: Int)?
+    private var previewEvents: [PopEvent] = []
     private var continuesUsed = 0
     private var lastUpdate: TimeInterval?
 
@@ -77,6 +90,9 @@ final class GameScene: SKScene {
     private let messageLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
     private let backwardButton = ButtonNode(action: "backward", size: CGSize(width: 260, height: 50))
     private let relaxedButton = ButtonNode(action: "relaxed", size: CGSize(width: 230, height: 50))
+    private let hintsButton = ButtonNode(action: "hints", size: CGSize(width: 166, height: 50))
+    private var gapMarkers: [BubbleNode] = []
+    private let previewLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
     private let primaryButton = ButtonNode(action: "next", size: CGSize(width: 260, height: 64))
     private let continueButton = ButtonNode(action: "continue", size: CGSize(width: 260, height: 64))
 
@@ -161,8 +177,24 @@ final class GameScene: SKScene {
         let buttonY = Double(topInset) + 90
         backwardButton.position = scenePoint(Vec2(16 + 130, buttonY))
         relaxedButton.position = scenePoint(Vec2(292 + 115, buttonY))
+        hintsButton.position = scenePoint(Vec2(538 + 83, buttonY))
         addChild(backwardButton)
         addChild(relaxedButton)
+        addChild(hintsButton)
+        for _ in 0..<maxHintSpots {
+            let marker = BubbleNode(radius: 12)
+            marker.zPosition = 5
+            marker.alpha = 0.9
+            marker.run(.repeatForever(.sequence([.scale(to: 1.25, duration: 0.5), .scale(to: 1, duration: 0.5)])))
+            marker.isHidden = true
+            addChild(marker)
+            gapMarkers.append(marker)
+        }
+        previewLabel.fontSize = 34
+        previewLabel.fontColor = StoneStyle.rgb(0xF2CF72)
+        previewLabel.zPosition = 6
+        previewLabel.isHidden = true
+        addChild(previewLabel)
         messageLabel.fontSize = 40
         messageLabel.fontColor = StoneStyle.cream
         messageLabel.position = CGPoint(x: size.width / 2, y: size.height / 2 + 30)
@@ -270,38 +302,82 @@ final class GameScene: SKScene {
     }
 
     private func updateShot(_ dt: Double) {
-        guard var flying = shot, let track else { return }
-        flying.position = flying.position + flying.velocity * dt
-        shot = flying
-        let bounds = Box(x: 0, y: 0, width: Double(size.width), height: Double(size.height)).grown(by: diameter)
-        guard bounds.contains(flying.position) else {
-            shot = nil
-            score.recordMiss()
-            return
+        guard var flying = shot, track != nil else { return }
+        let positions = bubblePositions()
+        // Small steps so a fast shot can't skip past a bubble (and so the
+        // aim preview, which steps the same way, matches what happens).
+        let distance = (flying.velocity * dt).length
+        let steps = max(1, Int((distance / (diameter * 0.25)).rounded(.up)))
+        for _ in 0..<steps {
+            flying.position = flying.position + flying.velocity * (dt / Double(steps))
+            guard playBounds.contains(flying.position) else {
+                shot = nil
+                score.recordMiss()
+                return
+            }
+            if let hit = nearestBubble(to: flying.position, in: positions) {
+                land(beside: hit, at: flying.position, letter: flying.letter)
+                return
+            }
         }
+        shot = flying
+    }
+
+    private var playBounds: Box {
+        Box(x: 0, y: 0, width: Double(size.width), height: Double(size.height)).grown(by: diameter)
+    }
+
+    /// Positions of the bubbles on the track; nil for those not yet out.
+    private func bubblePositions() -> [Vec2?] {
+        guard let track else { return [] }
+        return letters.indices.map { i in
+            let s = bubbleS(i)
+            return s >= 0 ? track.position(at: s) : nil
+        }
+    }
+
+    /// The bubble a shot at `point` touches, if any.
+    private func nearestBubble(to point: Vec2, in positions: [Vec2?]) -> Int? {
         var hit: Int?
         var best = diameter * 0.85
-        for i in letters.indices {
-            let s = bubbleS(i)
-            guard s >= 0 else { continue }
-            let distance = flying.position.distance(to: track.position(at: s))
+        for (i, position) in positions.enumerated() {
+            guard let position else { continue }
+            let distance = point.distance(to: position)
             if distance < best {
                 best = distance
                 hit = i
             }
         }
-        if let hit {
-            land(beside: hit, at: flying.position, letter: flying.letter)
+        return hit
+    }
+
+    /// Which side of bubble `hit` a shot at `position` goes in.
+    private func landingIndex(beside hit: Int, at position: Vec2) -> Int {
+        guard let track else { return hit }
+        let s = bubbleS(hit)
+        let ahead = (position - track.position(at: s)).dot(track.tangent(at: s)) > 0
+        return ahead ? hit + 1 : hit
+    }
+
+    /// Where a shot fired now would land, stepping along the aim like a real shot.
+    private func predictLanding() -> (index: Int, position: Vec2)? {
+        let positions = bubblePositions()
+        var point = shooter
+        let step = aim * (diameter * 0.25)
+        for _ in 0..<2000 {
+            point = point + step
+            guard playBounds.contains(point) else { return nil }
+            if let hit = nearestBubble(to: point, in: positions) {
+                return (landingIndex(beside: hit, at: point), point)
+            }
         }
+        return nil
     }
 
     /// Inserts the shot next to bubble `hit` and resolves pops. Bubbles ahead
     /// of the landing spot are pushed forward one slot, as in Zuma.
     private func land(beside hit: Int, at position: Vec2, letter: Character) {
-        guard let track else { return }
-        let s = bubbleS(hit)
-        let ahead = (position - track.position(at: s)).dot(track.tangent(at: s)) > 0
-        let index = ahead ? hit + 1 : hit
+        let index = landingIndex(beside: hit, at: position)
         letters.insert(letter, at: index)
         headS += diameter
         shot = nil
@@ -360,7 +436,7 @@ final class GameScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
-        for button in [backwardButton, relaxedButton, primaryButton, continueButton]
+        for button in [backwardButton, relaxedButton, hintsButton, primaryButton, continueButton]
         where !button.isHidden && button.contains(location) {
             press(button.name ?? "")
             return
@@ -397,6 +473,8 @@ final class GameScene: SKScene {
             allowBackward.toggle()
         case "relaxed":
             relaxed.toggle()
+        case "hints":
+            hintsOn.toggle()
         case "next":
             startLevel(state == .won ? level + 1 : level)
         case "continue":
@@ -434,13 +512,20 @@ final class GameScene: SKScene {
         current = next
     }
 
-    /// Debug autoplay for screenshots: loads the letter that completes a
-    /// visible pair and fires at it.
+    /// Debug autoplay for screenshots: fires at the first hinted word spot,
+    /// otherwise loads the letter that completes a visible pair and fires at it.
     private func runAutoplay(_ dt: Double) {
         autoplayTimer += dt
         guard autoplayTimer >= 0.66, shot == nil, let track else { return }
         autoplayTimer = 0
         guard letters.count >= 2 else { return }
+        // Keep the aim preview on so screenshots show it.
+        aiming = true
+        if let spot = hintSpots.first, gapS(spot.insertIndex) > 0 {
+            aim(at: track.position(at: gapS(spot.insertIndex)))
+            fire()
+            return
+        }
         for i in stride(from: letters.count - 2, through: 0, by: -1)
         where letters[i] == letters[i + 1] && bubbleS(i) > 0 {
             current = letters[i]
@@ -479,9 +564,11 @@ final class GameScene: SKScene {
         } else {
             shotNode.isHidden = true
         }
+        let landing = state == .playing && shot == nil ? predictLanding() : nil
+        renderHints(landing)
         let aimPath = CGMutablePath()
         aimPath.move(to: scenePoint(shooter))
-        aimPath.addLine(to: scenePoint(shooter + aim * 240))
+        aimPath.addLine(to: scenePoint(landing?.position ?? shooter + aim * 240))
         aimLine.path = aimPath.copy(dashingWithPhase: 0, lengths: [12, 12])
         aimLine.isHidden = state != .playing
         refreshHUD()
@@ -495,6 +582,7 @@ final class GameScene: SKScene {
         hudLabel.text = hud
         backwardButton.text = "Backward: \(allowBackward ? "on" : "off")"
         relaxedButton.text = "Relaxed: \(relaxed ? "on" : "off")"
+        hintsButton.text = "Hints: \(hintsOn ? "on" : "off")"
         switch state {
         case .playing:
             messageLabel.isHidden = true
@@ -513,6 +601,103 @@ final class GameScene: SKScene {
             primaryButton.isHidden = false
             continueButton.isHidden = !ads.policy.canOfferContinue(continuesUsed: continuesUsed, ranked: false)
         }
+    }
+
+    // MARK: - Hints
+
+    private func renderHints(_ landing: (index: Int, position: Vec2)?) {
+        var glow = [BubbleNode.Glow](repeating: .none, count: letters.count)
+        updateHintSpots()
+        let showHints = hintsOn && state == .playing
+        let shown = showHints ? Array(hintSpots.prefix(maxHintSpots)) : []
+        for (k, marker) in gapMarkers.enumerated() {
+            marker.isHidden = true
+            guard k < shown.count, let track else { continue }
+            let spot = shown[k]
+            let s = gapS(spot.insertIndex)
+            guard s >= 0 else { continue }
+            marker.isHidden = false
+            marker.show(current)
+            marker.position = scenePoint(track.position(at: s))
+            if let bubbles = spot.bubbles {
+                for i in bubbles where i < glow.count {
+                    glow[i] = .hint
+                }
+            }
+        }
+        // Nothing for this letter but the next one fits somewhere: nudge a swap.
+        let nudge = showHints && shown.isEmpty && nextLetterHasSpots
+        if nudge, upcomingNodes[0].action(forKey: "nudge") == nil {
+            upcomingNodes[0].run(.repeatForever(.sequence([.scale(to: 1.35, duration: 0.4),
+                                                           .scale(to: 1, duration: 0.4)])), withKey: "nudge")
+        } else if !nudge {
+            upcomingNodes[0].removeAction(forKey: "nudge")
+            upcomingNodes[0].setScale(1)
+        }
+
+        previewLabel.isHidden = true
+        if aiming, let landing {
+            let events = previewPops(inserting: current, at: landing.index)
+            if let first = events.first {
+                for j in first.start...first.end where j != landing.index {
+                    let i = j < landing.index ? j : j - 1
+                    if i < glow.count {
+                        glow[i] = .pop
+                    }
+                }
+                var text = first.kind == .word ? (first.word ?? "").uppercased() : "Triple"
+                if events.count > 1 {
+                    text += " + chain x\(events.count)"
+                }
+                previewLabel.text = text
+                previewLabel.position = scenePoint(landing.position + Vec2(0, -56))
+                previewLabel.isHidden = false
+            }
+        }
+        for (node, style) in zip(bubbleNodes, glow) {
+            node.glow = style
+        }
+    }
+
+    /// Recomputes where the shooter's letter spells a common word, when the chain or letter changed.
+    private func updateHintSpots() {
+        let next = upcoming.first
+        if let key = hintKey, key.letters == letters, key.current == current, key.next == next,
+           key.backward == allowBackward {
+            return
+        }
+        hintKey = (letters, current, next, allowBackward)
+        let flips = flipTest()
+        hintSpots = Hints.wordSpots(for: current, in: letters, words: words, allowBackward: allowBackward,
+                                    flips: flips).filter(\.common)
+        nextLetterHasSpots = next.map {
+            Hints.wordSpots(for: $0, in: letters, words: words, allowBackward: allowBackward, flips: flips)
+                .contains(where: \.common)
+        } ?? false
+    }
+
+    private func previewPops(inserting letter: Character, at index: Int) -> [PopEvent] {
+        if let key = previewKey, key.letters == letters, key.letter == letter, key.index == index {
+            return previewEvents
+        }
+        previewKey = (letters, letter, index)
+        previewEvents = Hints.preview(inserting: letter, at: index, in: letters, words: words,
+                                      allowBackward: allowBackward, flips: flipTest())
+        return previewEvents
+    }
+
+    /// Arc length of the gap a letter inserted at `index` would fill.
+    private func gapS(_ index: Int) -> Double {
+        if letters.isEmpty {
+            return -1
+        }
+        if index <= 0 {
+            return bubbleS(0) - diameter / 2
+        }
+        if index >= letters.count {
+            return bubbleS(letters.count - 1) + diameter / 2
+        }
+        return (bubbleS(index - 1) + bubbleS(index)) / 2
     }
 
     private func describe(_ event: PopEvent) -> String {

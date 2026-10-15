@@ -118,6 +118,27 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(keeper.combo, 0)
     }
 
+    // MARK: Hints
+
+    func testWordSpotsFindWhereALetterFits() {
+        let spots = Hints.wordSpots(for: "a", in: chars("qcrnez"), words: smallWords(), allowBackward: false)
+        XCTAssertEqual(spots, [WordSpot(insertIndex: 3, word: "crane", bubbles: 1...4, common: true)])
+        XCTAssertTrue(Hints.wordSpots(for: "x", in: chars("qcrnez"), words: smallWords(), allowBackward: false).isEmpty)
+    }
+
+    func testWordSpotsFlagUncommonWords() {
+        let spots = Hints.wordSpots(for: "s", in: chars("crane"), words: smallWords(), allowBackward: false)
+        XCTAssertEqual(spots.map(\.word), ["cranes"])
+        XCTAssertEqual(spots.first?.common, false)
+    }
+
+    func testPreviewLeavesChainUnchanged() {
+        let letters = chars("qcrnez")
+        let events = Hints.preview(inserting: "a", at: 3, in: letters, words: smallWords(), allowBackward: false)
+        XCTAssertEqual(events.map(\.word), ["crane"])
+        XCTAssertEqual(String(letters), "qcrnez")
+    }
+
     // MARK: Dealing and generation
 
     func testUsefulLetters() {

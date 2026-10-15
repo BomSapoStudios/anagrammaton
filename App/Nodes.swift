@@ -7,11 +7,43 @@ final class BubbleNode: SKNode {
     private let shadow = SKSpriteNode(texture: StoneStyle.shadow)
     private let label = SKLabelNode(fontNamed: StoneStyle.letterFont)
     private let labelShadow = SKLabelNode(fontNamed: StoneStyle.letterFont)
+    private let ring: SKShapeNode
     private(set) var letter: Character?
+
+    enum Glow {
+        case none
+        /// Part of a word the shooter's letter could complete.
+        case hint
+        /// Would pop if the shot were fired now.
+        case pop
+    }
+
+    var glow = Glow.none {
+        didSet {
+            guard glow != oldValue else { return }
+            switch glow {
+            case .none:
+                ring.isHidden = true
+            case .hint:
+                ring.isHidden = false
+                ring.strokeColor = StoneStyle.rgb(0xF2CF72).withAlphaComponent(0.75)
+                ring.lineWidth = 3
+            case .pop:
+                ring.isHidden = false
+                ring.strokeColor = .white
+                ring.lineWidth = 5
+            }
+        }
+    }
 
     init(radius: CGFloat) {
         marble = SKSpriteNode(texture: nil, color: .white, size: CGSize(width: radius * 2, height: radius * 2))
+        ring = SKShapeNode(circleOfRadius: radius + 2)
         super.init()
+        ring.fillColor = .clear
+        ring.glowWidth = 4
+        ring.zPosition = 3
+        ring.isHidden = true
         shadow.size = CGSize(width: radius * 2.3, height: radius * 2.3)
         shadow.position = CGPoint(x: radius * 0.12, y: -radius * 0.2)
         shadow.zPosition = -5
@@ -27,6 +59,7 @@ final class BubbleNode: SKNode {
             node.zPosition = node === label ? 2 : 1
             addChild(node)
         }
+        addChild(ring)
     }
 
     @available(*, unavailable)
