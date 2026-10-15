@@ -40,7 +40,7 @@ final class GameScene: SKScene {
     private var headS = 0.0
     /// Letters still to enter; the last one enters next.
     private var queue: [Character] = []
-    private var speed = 40.0
+    private var chainSpeed = 40.0
     private var alphabet: [Character] = []
     private var introDone = false
     private var shooter = Vec2.zero
@@ -173,7 +173,7 @@ final class GameScene: SKScene {
         dealer = LetterDealer(words: words, seed: seed &+ 2)
         dealer.helpRate = lerp(0.8, 0.4, t)
         dealer.pityLimit = Int(lerp(2, 4, t).rounded())
-        speed = lerp(40, 90, t)
+        chainSpeed = lerp(40, 90, t)
         letters = []
         headS = 0
         introDone = false
@@ -236,7 +236,7 @@ final class GameScene: SKScene {
     private func advanceChain(_ dt: Double) {
         guard let track else { return }
         if !(relaxed && aiming) {
-            headS += speed * (introDone ? 1 : introSpeedFactor) * dt
+            headS += chainSpeed * (introDone ? 1 : introSpeedFactor) * dt
             if headS >= track.length * introFraction {
                 introDone = true
             }
