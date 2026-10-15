@@ -13,6 +13,8 @@ public final class LetterDealer {
 
     public var helpRate = 0.8
     public var pityLimit = 2
+    /// Also count stems that spell a word read the other way.
+    public var allowBackward = false
 
     private let words: WordList
     private var rng: SeededGenerator
@@ -43,7 +45,8 @@ public final class LetterDealer {
                     for c in Self.alphabet {
                         var candidate = stem
                         candidate.insert(c, at: pos)
-                        if words.isSeed(String(candidate)) {
+                        if words.isSeed(String(candidate))
+                            || (allowBackward && words.isSeed(String(candidate.reversed()))) {
                             mark(&out, c, i + 3)
                         }
                     }

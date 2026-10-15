@@ -11,8 +11,9 @@ import SwiftUI
 /// where y points up.
 ///
 /// Controls: drag to aim and release to fire. Tap the shooter to swap
-/// letters. The buttons at the top toggle backward words, relaxed mode and
-/// word hints.
+/// letters. The buttons at the top toggle relaxed mode and word hints.
+/// Words count in both directions, so a word never stops working because
+/// the chain turned a corner.
 ///
 /// Hints: bubbles that the shooter's letter can turn into a common word glow,
 /// with a small copy of the letter in the gap it belongs in. While aiming,
@@ -54,7 +55,8 @@ final class GameScene: SKScene {
     private var upcoming: [Character] = []
     private var shot: (position: Vec2, velocity: Vec2, letter: Character)?
     private var state = State.playing
-    private var allowBackward = false
+    /// Always on: words spell forward or backward wherever the chain runs.
+    private let allowBackward = true
     private var relaxed = false
     /// Words read left to right (or top to bottom) as they look on screen.
     private var screenOrder = true
@@ -88,7 +90,6 @@ final class GameScene: SKScene {
     private var bubbleNodes: [BubbleNode] = []
     private let hudLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
     private let messageLabel = SKLabelNode(fontNamed: StoneStyle.uiFont)
-    private let backwardButton = ButtonNode(action: "backward", size: CGSize(width: 260, height: 50))
     private let relaxedButton = ButtonNode(action: "relaxed", size: CGSize(width: 230, height: 50))
     private let hintsButton = ButtonNode(action: "hints", size: CGSize(width: 166, height: 50))
     private var gapMarkers: [BubbleNode] = []
@@ -175,10 +176,8 @@ final class GameScene: SKScene {
         hudLabel.position = scenePoint(Vec2(16, Double(topInset) + 40))
         addChild(hudLabel)
         let buttonY = Double(topInset) + 90
-        backwardButton.position = scenePoint(Vec2(16 + 130, buttonY))
-        relaxedButton.position = scenePoint(Vec2(292 + 115, buttonY))
-        hintsButton.position = scenePoint(Vec2(538 + 83, buttonY))
-        addChild(backwardButton)
+        relaxedButton.position = scenePoint(Vec2(16 + 115, buttonY))
+        hintsButton.position = scenePoint(Vec2(262 + 83, buttonY))
         addChild(relaxedButton)
         addChild(hintsButton)
         for _ in 0..<maxHintSpots {
@@ -223,6 +222,7 @@ final class GameScene: SKScene {
         dealer = LetterDealer(words: words, seed: seed &+ 2)
         dealer.helpRate = lerp(0.8, 0.4, t)
         dealer.pityLimit = Int(lerp(2, 4, t).rounded())
+        dealer.allowBackward = allowBackward
         chainSpeed = lerp(40, 90, t)
         letters = []
         headS = 0
@@ -436,7 +436,7 @@ final class GameScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let location = touch.location(in: self)
-        for button in [backwardButton, relaxedButton, hintsButton, primaryButton, continueButton]
+        for button in [relaxedButton, hintsButton, primaryButton, continueButton]
         where !button.isHidden && button.contains(location) {
             press(button.name ?? "")
             return
@@ -469,8 +469,6 @@ final class GameScene: SKScene {
 
     private func press(_ action: String) {
         switch action {
-        case "backward":
-            allowBackward.toggle()
         case "relaxed":
             relaxed.toggle()
         case "hints":
@@ -580,7 +578,6 @@ final class GameScene: SKScene {
             hud += "    Combo \(score.combo)"
         }
         hudLabel.text = hud
-        backwardButton.text = "Backward: \(allowBackward ? "on" : "off")"
         relaxedButton.text = "Relaxed: \(relaxed ? "on" : "off")"
         hintsButton.text = "Hints: \(hintsOn ? "on" : "off")"
         switch state {
@@ -705,9 +702,6 @@ final class GameScene: SKScene {
         switch event.kind {
         case .word:
             text = (event.word ?? "").uppercased()
-            if event.backward {
-                text += " (backward)"
-            }
         case .triple:
             text = "Triple"
         }

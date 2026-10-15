@@ -17,7 +17,8 @@ The Xcode project is generated from `project.yml` by
 commit the updated project.
 
 Drag to aim and release to fire. Tap the shooter to swap letters. The buttons
-at the top toggle backward words and relaxed mode.
+at the top toggle relaxed mode and word hints. Words count forward or backward,
+so a word still works after the chain turns a corner.
 
 ## Tests
 

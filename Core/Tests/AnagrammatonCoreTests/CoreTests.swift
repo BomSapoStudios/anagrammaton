@@ -146,6 +146,9 @@ final class CoreTests: XCTestCase {
         XCTAssertNotNil(dealer.usefulLetters(chars("qcrnez"))["a"])
         XCTAssertNotNil(dealer.usefulLetters(chars("qxxz"))["x"])
         XCTAssertNotNil(dealer.usefulLetters(chars("qenrcz"), flips: alwaysFlipped)["a"])
+        XCTAssertNil(dealer.usefulLetters(chars("qenrcz"))["a"])
+        dealer.allowBackward = true
+        XCTAssertNotNil(dealer.usefulLetters(chars("qenrcz"))["a"])
     }
 
     func testFullHelpDealsUsefulLetters() {
