@@ -5,8 +5,8 @@ import UIKit
 final class BubbleNode: SKNode {
     private let marble: SKSpriteNode
     private let shadow = SKSpriteNode(texture: StoneStyle.shadow)
-    private let label = SKLabelNode(fontNamed: StoneStyle.letterFont)
-    private let labelShadow = SKLabelNode(fontNamed: StoneStyle.letterFont)
+    private let label = SKLabelNode()
+    private let fontSize: CGFloat
     private let ring: SKShapeNode
     private(set) var letter: Character?
 
@@ -39,6 +39,7 @@ final class BubbleNode: SKNode {
     init(radius: CGFloat) {
         marble = SKSpriteNode(texture: nil, color: .white, size: CGSize(width: radius * 2, height: radius * 2))
         ring = SKShapeNode(circleOfRadius: radius + 2)
+        fontSize = radius * 1.3
         super.init()
         ring.fillColor = .clear
         ring.glowWidth = 4
@@ -49,16 +50,11 @@ final class BubbleNode: SKNode {
         shadow.zPosition = -5
         addChild(shadow)
         addChild(marble)
-        let layers: [(SKLabelNode, CGPoint)] = [(labelShadow, CGPoint(x: 0, y: -radius * 0.06)), (label, .zero)]
-        for (node, offset) in layers {
-            node.fontSize = radius * 1.1
-            node.verticalAlignmentMode = .center
-            node.horizontalAlignmentMode = .center
-            node.position = offset
-            // Explicit layers: draw order between siblings at the same z isn't guaranteed.
-            node.zPosition = node === label ? 2 : 1
-            addChild(node)
-        }
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .center
+        // Explicit layer: draw order between siblings at the same z isn't guaranteed.
+        label.zPosition = 2
+        addChild(label)
         addChild(ring)
     }
 
@@ -70,10 +66,15 @@ final class BubbleNode: SKNode {
         self.letter = letter
         let stone = StoneStyle.stone(for: letter)
         marble.texture = StoneStyle.marble(for: letter)
-        label.text = String(letter).uppercased()
-        labelShadow.text = label.text
-        label.fontColor = stone.ink
-        labelShadow.fontColor = stone.inkShadow
+        // A bold sans serif with a contrasting outline reads on any stone.
+        let font = UIFont(name: StoneStyle.letterFont, size: fontSize) ?? .systemFont(ofSize: fontSize, weight: .heavy)
+        label.attributedText = NSAttributedString(string: String(letter).uppercased(), attributes: [
+            .font: font,
+            .foregroundColor: stone.ink,
+            .strokeColor: stone.outline,
+            // Negative width draws the outline and fills the letter.
+            .strokeWidth: -5,
+        ])
     }
 }
 
@@ -118,17 +119,17 @@ struct Stone {
     let carvedInk: Bool
 
     var ink: UIColor {
-        carvedInk ? StoneStyle.rgb(0x241E1A) : StoneStyle.rgb(0xF4E6C2)
+        carvedInk ? StoneStyle.rgb(0x14110E) : .white
     }
 
-    var inkShadow: UIColor {
-        carvedInk ? UIColor(white: 1, alpha: 0.55) : UIColor(white: 0, alpha: 0.6)
+    var outline: UIColor {
+        carvedInk ? UIColor(white: 1, alpha: 0.85) : UIColor(white: 0, alpha: 0.85)
     }
 }
 
 /// Procedural textures for the polished-stone look, drawn once and cached.
 enum StoneStyle {
-    static let letterFont = "Optima-ExtraBlack"
+    static let letterFont = "AvenirNext-Heavy"
     static let uiFont = "Optima-Bold"
     static let cream = rgb(0xF4E6C2)
     static let brass = rgb(0xA88B5C)
@@ -251,6 +252,11 @@ enum StoneStyle {
                 cg.fillEllipse(in: CGRect(x: random.next() * d, y: random.next() * d, width: r, height: r))
             }
 
+            // A calm face behind the letter: fade the veins toward the body color.
+            let face = makeGradient([stone.mid.withAlphaComponent(0.7), stone.mid.withAlphaComponent(0)], [0.4, 1])
+            cg.drawRadialGradient(face, startCenter: center, startRadius: 0, endCenter: center,
+                                  endRadius: d * 0.36, options: [])
+
             // Darker rim gives the sphere its depth.
             let rim = makeGradient([UIColor(white: 0, alpha: 0), UIColor(white: 0, alpha: 0.42)], [0.7, 1])
             cg.drawRadialGradient(rim, startCenter: center, startRadius: 0, endCenter: center, endRadius: d / 2, options: [])
@@ -263,9 +269,9 @@ enum StoneStyle {
 
             // Polished highlight.
             cg.saveGState()
-            cg.translateBy(x: d * 0.37, y: d * 0.24)
+            cg.translateBy(x: d * 0.33, y: d * 0.17)
             cg.rotate(by: -0.45)
-            let highlight = CGRect(x: -d * 0.2, y: -d * 0.11, width: d * 0.4, height: d * 0.22)
+            let highlight = CGRect(x: -d * 0.16, y: -d * 0.08, width: d * 0.32, height: d * 0.16)
             cg.addEllipse(in: highlight)
             cg.clip()
             let shine = makeGradient([UIColor(white: 1, alpha: 0.85), UIColor(white: 1, alpha: 0.05)], [0, 1])
