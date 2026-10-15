@@ -8,9 +8,13 @@ the chain. Built in Swift with SpriteKit.
 
 You need a Mac with Xcode 16 or later.
 
-1. Install [XcodeGen](https://github.com/yonaskolb/XcodeGen): `brew install xcodegen`
-2. In this folder, run `xcodegen generate`. It writes `Anagrammaton.xcodeproj`.
-3. Open `Anagrammaton.xcodeproj`, pick an iPhone simulator, and press Run (Cmd-R).
+1. Open `Anagrammaton.xcodeproj`.
+2. Pick an iPhone simulator at the top of the window and press Run (Cmd-R).
+
+The Xcode project is generated from `project.yml` by
+[XcodeGen](https://github.com/yonaskolb/XcodeGen). After changing
+`project.yml`, run `brew install xcodegen` once, then `xcodegen generate`, and
+commit the updated project.
 
 Drag to aim and release to fire. Tap the shooter to swap letters. The buttons
 at the top toggle backward words and relaxed mode.
@@ -36,7 +40,7 @@ automatically, and uploads screenshots as a build artifact.
 | `Core/Sources/AnagrammatonCore/AdPolicy.swift`, `App/Ads/` | Ad rules (frequency caps, remove-ads, no ads on ranked levels) and a stub provider |
 | `App/GameScene.swift` | The playable SpriteKit scene |
 | `data/` | Word lists (see `data/README.md`) |
-| `project.yml` | XcodeGen spec for the Xcode project |
+| `project.yml` | XcodeGen spec that generates `Anagrammaton.xcodeproj` |
 
 The game rules live in a Swift package with no UIKit or SpriteKit, so they
 run and test anywhere Swift does. The design doc lives in the project as

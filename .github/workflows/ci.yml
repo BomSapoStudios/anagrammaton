@@ -24,6 +24,11 @@ jobs:
         run: |
           brew install xcodegen
           xcodegen generate
+          # The committed project must match project.yml.
+          git diff --exit-code -- Anagrammaton.xcodeproj || {
+            echo "::error::Anagrammaton.xcodeproj is out of date; run xcodegen generate and commit it"
+            exit 1
+          }
       - name: Build for the simulator
         run: |
           set +e
