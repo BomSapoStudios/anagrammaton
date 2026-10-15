@@ -1,3 +1,5 @@
+.DS_Store
+
 # Xcode and SwiftPM
 build/
 DerivedData/
@@ -5,3 +7,17 @@ xcuserdata/
 *.xcuserstate
 .build/
 .swiftpm/
+*.ipa
+*.xcarchive
+*.dSYM.zip
+
+# App Store publishing output
+appstore/build/
+appstore/logs/
+
+# Secrets
+.env
+config.env
+*.p8
+*.p12
+*.mobileprovision
