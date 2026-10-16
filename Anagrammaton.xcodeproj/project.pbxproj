@@ -1,0 +1,393 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0090DB16B00509D96D55C803 /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFE107710711394A96831173 /* GameScene.swift */; };
+		05F2D7E8887C8A6D905E3109 /* words_pop.txt in Resources */ = {isa = PBXBuildFile; fileRef = 14D5E78083260D32D1E28DC2 /* words_pop.txt */; };
+		1D1C6F750829BD00B9543252 /* AnagrammatonApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FF7C31B2D7B57A1BAA0288A /* AnagrammatonApp.swift */; };
+		6853B2B2DBBCB8B7428ADBA2 /* Nodes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F949366C370AD6F35813F80 /* Nodes.swift */; };
+		68E3D016F86EB3F62E98C11B /* blocklist.txt in Resources */ = {isa = PBXBuildFile; fileRef = 36D5C120A0DAE20013C4A142 /* blocklist.txt */; };
+		9195BFD33AAC4A9DF4E2EFF5 /* AdService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1211424BB0A2AC124B492742 /* AdService.swift */; };
+		B313B3200A8C6698B13DDAF1 /* words_seed.txt in Resources */ = {isa = PBXBuildFile; fileRef = 15EC42F33EC23BB62CBFA0F3 /* words_seed.txt */; };
+		F94C06017AAE822448FAAAAE /* AnagrammatonCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7689FBE62DCB0E45B1E10B0B /* AnagrammatonCore */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1211424BB0A2AC124B492742 /* AdService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdService.swift; sourceTree = "<group>"; };
+		14D5E78083260D32D1E28DC2 /* words_pop.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = words_pop.txt; sourceTree = "<group>"; };
+		15EC42F33EC23BB62CBFA0F3 /* words_seed.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = words_seed.txt; sourceTree = "<group>"; };
+		36D5C120A0DAE20013C4A142 /* blocklist.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = blocklist.txt; sourceTree = "<group>"; };
+		4C8B53A59FD3A008EF5EEFE9 /* Core */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Core; path = Core; sourceTree = SOURCE_ROOT; };
+		4FF7C31B2D7B57A1BAA0288A /* AnagrammatonApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnagrammatonApp.swift; sourceTree = "<group>"; };
+		6F949366C370AD6F35813F80 /* Nodes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nodes.swift; sourceTree = "<group>"; };
+		CCF7CC718271F011BDD0309A /* Anagrammaton.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Anagrammaton.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DFE107710711394A96831173 /* GameScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameScene.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		99C31181B168F0F58BD23DC0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F94C06017AAE822448FAAAAE /* AnagrammatonCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		279945E88E5CC8A506B292FB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CCF7CC718271F011BDD0309A /* Anagrammaton.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2F00CABDBB82ECE069FF923E /* data */ = {
+			isa = PBXGroup;
+			children = (
+				36D5C120A0DAE20013C4A142 /* blocklist.txt */,
+				14D5E78083260D32D1E28DC2 /* words_pop.txt */,
+				15EC42F33EC23BB62CBFA0F3 /* words_seed.txt */,
+			);
+			path = data;
+			sourceTree = "<group>";
+		};
+		5C28B89990157161D1B8BDC7 = {
+			isa = PBXGroup;
+			children = (
+				A68AB63BA09688F3EEDC503F /* App */,
+				2F00CABDBB82ECE069FF923E /* data */,
+				B2361CC9E7A2E1DE4725791E /* Packages */,
+				279945E88E5CC8A506B292FB /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A68AB63BA09688F3EEDC503F /* App */ = {
+			isa = PBXGroup;
+			children = (
+				4FF7C31B2D7B57A1BAA0288A /* AnagrammatonApp.swift */,
+				DFE107710711394A96831173 /* GameScene.swift */,
+				6F949366C370AD6F35813F80 /* Nodes.swift */,
+				EA45F0DF16EAFF212BFC1ADC /* Ads */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		B2361CC9E7A2E1DE4725791E /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				4C8B53A59FD3A008EF5EEFE9 /* Core */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		EA45F0DF16EAFF212BFC1ADC /* Ads */ = {
+			isa = PBXGroup;
+			children = (
+				1211424BB0A2AC124B492742 /* AdService.swift */,
+			);
+			path = Ads;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BA24E04073FBBA2EC83AD586 /* Anagrammaton */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B04ABC97CDFBB5343FE4EE39 /* Build configuration list for PBXNativeTarget "Anagrammaton" */;
+			buildPhases = (
+				5B399A204003911F6E97FA17 /* Sources */,
+				94DC467E869FD33C440D7B5D /* Resources */,
+				99C31181B168F0F58BD23DC0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Anagrammaton;
+			packageProductDependencies = (
+				7689FBE62DCB0E45B1E10B0B /* AnagrammatonCore */,
+			);
+			productName = Anagrammaton;
+			productReference = CCF7CC718271F011BDD0309A /* Anagrammaton.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		66831EC722BD9E149DDA34D6 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					BA24E04073FBBA2EC83AD586 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = BE7AF504226DF1107A384DBB /* Build configuration list for PBXProject "Anagrammaton" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5C28B89990157161D1B8BDC7;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				C8AB876F93B04E3ED1FD3E9D /* XCLocalSwiftPackageReference "Core" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 279945E88E5CC8A506B292FB /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BA24E04073FBBA2EC83AD586 /* Anagrammaton */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		94DC467E869FD33C440D7B5D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				68E3D016F86EB3F62E98C11B /* blocklist.txt in Resources */,
+				05F2D7E8887C8A6D905E3109 /* words_pop.txt in Resources */,
+				B313B3200A8C6698B13DDAF1 /* words_seed.txt in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5B399A204003911F6E97FA17 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9195BFD33AAC4A9DF4E2EFF5 /* AdService.swift in Sources */,
+				1D1C6F750829BD00B9543252 /* AnagrammatonApp.swift in Sources */,
+				0090DB16B00509D96D55C803 /* GameScene.swift in Sources */,
+				6853B2B2DBBCB8B7428ADBA2 /* Nodes.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		371E4C85774C1C5B9B431A88 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Anagrammaton;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bomsapostudios.anagrammaton;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		7898C88622161A5101FF9072 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		98CCE65264835D4746B54588 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		DD3574288C98B4496FFD9ECA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Anagrammaton;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
+				INFOPLIST_KEY_UIStatusBarHidden = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.bomsapostudios.anagrammaton;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B04ABC97CDFBB5343FE4EE39 /* Build configuration list for PBXNativeTarget "Anagrammaton" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				371E4C85774C1C5B9B431A88 /* Debug */,
+				DD3574288C98B4496FFD9ECA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BE7AF504226DF1107A384DBB /* Build configuration list for PBXProject "Anagrammaton" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				98CCE65264835D4746B54588 /* Debug */,
+				7898C88622161A5101FF9072 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		C8AB876F93B04E3ED1FD3E9D /* XCLocalSwiftPackageReference "Core" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Core;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7689FBE62DCB0E45B1E10B0B /* AnagrammatonCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AnagrammatonCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 66831EC722BD9E149DDA34D6 /* Project object */;
+}
