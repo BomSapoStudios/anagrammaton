@@ -63,12 +63,12 @@ public final class TrackGenerator {
         Double.random(in: range, using: &rng)
     }
 
-    /// Back-and-forth rows from the top of the area downward, entering from
+    /// Back-and-forth rows filling the area from the top down, entering from
     /// the left edge. The hole is at the end of the lowest row, nearest the
     /// shooter.
     private func serpentine(_ area: Box, _ diameter: Double) -> [Vec2] {
-        let rows = Int.random(in: 3...5, using: &rng)
         let gap = diameter * random(1.5...1.9)
+        let rows = max(3, Int((area.height - diameter * 2) / gap) + 1)
         let radius = gap / 2
         let left = area.x + radius + diameter * random(0.6...1.4)
         let right = area.maxX - radius - diameter * random(0.6...1.4)
