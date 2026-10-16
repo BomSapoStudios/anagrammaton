@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: write
+
+jobs:
+  core-tests:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test game rules
+        run: swift test --package-path Core
+
+  app:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          # The committed project must match project.yml.
+          git diff --exit-code -- Anagrammaton.xcodeproj || {
+            echo "::error::Anagrammaton.xcodeproj is out of date; run xcodegen generate and commit it"
+            exit 1
+          }
+      - name: Build for the simulator
+        run: |
+          set +e
+          xcodebuild -project Anagrammaton.xcodeproj -scheme Anagrammaton \
+            -sdk iphonesimulator -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build > build.log 2>&1
+          status=$?
+          # Surface compiler errors as annotations so they show on the PR.
+          grep -E "error: " build.log | sort -u | head -10 | while IFS= read -r line; do
+            echo "::error::${line#$GITHUB_WORKSPACE/}"
+          done
+          tail -5 build.log
+          exit $status
+      - name: Play levels 1 and 4 and take screenshots
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          for runtime in sorted(devices, reverse=True):
+              if "iOS" in runtime:
+                  phones = [d for d in devices[runtime] if d["name"].startswith("iPhone")]
+                  if phones:
+                      print(phones[0]["udid"]); break
+          ')
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          # Let SpringBoard settle after a first boot before launching.
+          sleep 20
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Anagrammaton.app
+          mkdir -p screenshots
+          for LEVEL in 1 2 5; do
+            LAUNCH=$(xcrun simctl launch --terminate-running-process "$UDID" com.bomsapostudios.anagrammaton -autoplayLevel "$LEVEL" 2>&1)
+            echo "::notice::level $LEVEL launch: $LAUNCH"
+            sleep 15
+            if xcrun simctl spawn "$UDID" launchctl list | grep -qi anagrammaton; then
+              echo "::notice::level $LEVEL: app still running"
+            else
+              echo "::warning::level $LEVEL: app is not running"
+            fi
+            xcrun simctl io "$UDID" screenshot "screenshots/level$LEVEL.png" 2>&1 | tail -1
+          done
+          echo "::notice::screenshots: $(ls screenshots | tr '\n' ' ')"
+          # Summarise any crash report as an annotation.
+          for REPORT in $(ls ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i anagrammaton); do
+            python3 - "$HOME/Library/Logs/DiagnosticReports/$REPORT" <<'PY'
+          import json, sys
+          text = open(sys.argv[1]).read()
+          body = json.loads(text[text.index("\n") + 1:])
+          exc = body.get("exception", {})
+          thread = next((t for t in body.get("threads", []) if t.get("triggered")), {})
+          frames = [f.get("symbol", "?") for f in thread.get("frames", [])[:8]]
+          print("::error::crash " + str(exc.get("type")) + " " + str(body.get("termination", {}).get("indicator", "")) + " | " + " < ".join(frames))
+          PY
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xcode-project
+          path: Anagrammaton.xcodeproj
+      - name: Publish screenshots and project to the ci-artifacts branch
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          mkdir out
+          cp -R screenshots Anagrammaton.xcodeproj out/
+          cd out
+          git init -q -b ci-artifacts
+          git add -A
+          git -c user.name="github-actions" -c user.email="github-actions@users.noreply.github.com" \
+            commit -qm "CI artifacts for ${{ github.event.pull_request.head.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ci-artifacts
