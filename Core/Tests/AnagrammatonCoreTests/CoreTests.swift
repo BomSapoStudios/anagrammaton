@@ -170,12 +170,11 @@ final class CoreTests: XCTestCase {
         dealer.targetWord = "crane"
         XCTAssertEqual(dealer.targetLetter(chain), "t")
         // Popping every run but one, then the last, spells the word.
-        var letters = chars("tttcrattne")
+        let letters = chars("tttcrattne")
         let spots = Hints.targetChainSpots(for: "t", in: letters, target: "crane", words: smallWords(),
                                            allowBackward: false)
         XCTAssertEqual(spots.first?.word, "crane")
-        let events = ChainRules.resolve(&letters, requiredLow: 6, requiredHigh: 6, words: smallWords(),
-                                        allowBackward: false)
+        let events = Hints.preview(inserting: "t", at: 6, in: letters, words: smallWords(), allowBackward: false)
         XCTAssertEqual(events.last?.word, "crane")
     }
 
