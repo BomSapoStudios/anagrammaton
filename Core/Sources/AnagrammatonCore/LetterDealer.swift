@@ -94,24 +94,51 @@ public final class LetterDealer {
         return pool.last ?? "e"
     }
 
-    /// The letter that would complete the target word somewhere in the chain,
-    /// preferring the spot nearest the hole.
+    /// A letter that moves the target word closer to popping: the letter of
+    /// a run splitting a whole copy, else the letter a copy is missing.
+    /// Prefers the copy nearest the hole.
     public func targetLetter(_ letters: [Character]) -> Character? {
-        guard let target = targetWord.map({ Array($0) }), target.count >= 2, letters.count >= target.count - 1 else {
-            return nil
-        }
-        let length = target.count - 1
-        for i in stride(from: letters.count - length, through: 0, by: -1) {
-            let window = Array(letters[i..<(i + length)])
-            for reading in allowBackward ? [window, Array(window.reversed())] : [window] {
-                for pos in 0..<target.count {
-                    var stem = target
-                    let missing = stem.remove(at: pos)
-                    if stem == reading {
-                        return missing
+        guard let target = targetWord.map({ Array($0) }), target.count >= 2 else { return nil }
+        let readings = allowBackward ? [letters, Array(letters.reversed())] : [letters]
+        for canMiss in [false, true] {
+            for (r, chain) in readings.enumerated() {
+                let starts = r == 0 ? Array(stride(from: chain.count - 1, through: 0, by: -1)) : Array(chain.indices)
+                for start in starts {
+                    if let letter = Self.matchTarget(chain, start, target, 0, canMiss: canMiss, missing: nil, blocker: nil) {
+                        return letter
                     }
                 }
             }
+        }
+        return nil
+    }
+
+    /// Matches `target` in `chain` from `i`, skipping runs (2 or more) of a
+    /// letter inside the word and, if `canMiss`, one missing letter.
+    /// Returns the letter to shoot next (the missing one first), or nil if
+    /// there is no match or the word is already whole.
+    static func matchTarget(_ chain: [Character], _ i: Int, _ target: [Character], _ j: Int,
+                            canMiss: Bool, missing: Character?, blocker: Character?) -> Character? {
+        if j == target.count {
+            return missing ?? blocker
+        }
+        if i < chain.count && chain[i] == target[j],
+           let found = matchTarget(chain, i + 1, target, j + 1, canMiss: canMiss, missing: missing, blocker: blocker) {
+            return found
+        }
+        if j > 0, i + 1 < chain.count, chain[i] == chain[i + 1], chain[i] != target[j] {
+            var k = i
+            while k < chain.count && chain[k] == chain[i] {
+                k += 1
+            }
+            if let found = matchTarget(chain, k, target, j, canMiss: canMiss, missing: missing,
+                                       blocker: blocker ?? chain[i]) {
+                return found
+            }
+        }
+        if canMiss, missing == nil, j > 0 || i < chain.count,
+           let found = matchTarget(chain, i, target, j + 1, canMiss: canMiss, missing: target[j], blocker: blocker) {
+            return found
         }
         return nil
     }

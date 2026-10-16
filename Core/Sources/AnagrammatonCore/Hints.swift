@@ -46,6 +46,31 @@ public enum Hints {
                         common: words.isCommon(word))
     }
 
+    /// Insert positions where `letter` makes a triple whose chain reaction
+    /// spells a word containing `target`, nearest the hole first.
+    public static func targetChainSpots(
+        for letter: Character, in letters: [Character], target: String, words: WordList,
+        allowBackward: Bool, flips: FlipTest? = nil
+    ) -> [WordSpot] {
+        guard !target.isEmpty else { return [] }
+        var spots: [WordSpot] = []
+        for index in stride(from: letters.count, through: 0, by: -1) {
+            var run = 0
+            var k = index - 1
+            while k >= 0 && letters[k] == letter { run += 1; k -= 1 }
+            k = index
+            while k < letters.count && letters[k] == letter { run += 1; k += 1 }
+            guard run >= 2 else { continue }
+            let events = preview(inserting: letter, at: index, in: letters, words: words,
+                                 allowBackward: allowBackward, flips: flips)
+            if let hit = events.first(where: { $0.kind == .word && ($0.word ?? "").contains(target) }),
+               let word = hit.word {
+                spots.append(WordSpot(insertIndex: index, word: word, bubbles: nil, common: words.isCommon(word)))
+            }
+        }
+        return spots
+    }
+
     /// What a shot landing at `index` would do, without changing the chain.
     public static func preview(
         inserting letter: Character, at index: Int, in letters: [Character], words: WordList,

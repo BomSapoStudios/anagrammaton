@@ -60,7 +60,7 @@ jobs:
           sleep 20
           xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/Anagrammaton.app
           mkdir -p screenshots
-          for LEVEL in 1 4; do
+          for LEVEL in 1 2 5; do
             LAUNCH=$(xcrun simctl launch --terminate-running-process "$UDID" com.bomsapostudios.anagrammaton -autoplayLevel "$LEVEL" 2>&1)
             echo "::notice::level $LEVEL launch: $LAUNCH"
             sleep 15

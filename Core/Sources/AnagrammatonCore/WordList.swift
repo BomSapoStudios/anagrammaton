@@ -68,7 +68,27 @@ public final class WordList {
         }
     }
 
-    public func isWord(_ word: String) -> Bool { pop.contains(word) }
+    public func isWord(_ word: String) -> Bool { pop.contains(word) && !heldBack.contains(word) }
+
+    /// Words that don't pop for now: pieces of the level's hidden word, so
+    /// LIST can't pop out of LISTEN before the word is whole.
+    public var heldBack: Set<String> = []
+
+    /// Every word inside `target` (forward or reversed) other than itself.
+    public func pieces(of target: String) -> Set<String> {
+        let letters = Array(target)
+        var found = Set<String>()
+        guard letters.count > WordList.minWordLength else { return found }
+        for length in WordList.minWordLength..<letters.count {
+            for start in 0...(letters.count - length) {
+                let piece = String(letters[start..<(start + length)])
+                for w in [piece, String(piece.reversed())] where pop.contains(w) {
+                    found.insert(w)
+                }
+            }
+        }
+        return found
+    }
     public func isSeed(_ word: String) -> Bool { seed.contains(word) }
     /// A familiar word: a seed word or a common short word.
     public func isCommon(_ word: String) -> Bool { seed.contains(word) || commonShort.contains(word) }

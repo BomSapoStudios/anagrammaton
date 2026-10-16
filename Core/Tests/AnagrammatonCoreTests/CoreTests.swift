@@ -159,6 +159,55 @@ final class CoreTests: XCTestCase {
         XCTAssertEqual(dealer.targetLetter(chars("zzecovqq")), "i")
     }
 
+    func testSpacedTargetPopsAsChainReaction() {
+        let generator = ChainGenerator(words: smallWords(), seed: 5)
+        generator.alphabet = Array("etaoinsrhldc")
+        generator.targetWord = "crane"
+        generator.targetSpaced = true
+        let chain = generator.generate(count: 60)
+        XCTAssertEqual(chain.filter { $0 != "t" }, chars("crane"), "word letters split only by runs of one spacer")
+        let dealer = LetterDealer(words: smallWords(), seed: 1)
+        dealer.targetWord = "crane"
+        XCTAssertEqual(dealer.targetLetter(chain), "t")
+        // Popping every run but one, then the last, spells the word.
+        var letters = chars("tttcrattne")
+        let spots = Hints.targetChainSpots(for: "t", in: letters, target: "crane", words: smallWords(),
+                                           allowBackward: false)
+        XCTAssertEqual(spots.first?.word, "crane")
+        let events = ChainRules.resolve(&letters, requiredLow: 6, requiredHigh: 6, words: smallWords(),
+                                        allowBackward: false)
+        XCTAssertEqual(events.last?.word, "crane")
+    }
+
+    func testDealerSeesThroughBlockerPairs() {
+        let dealer = LetterDealer(words: smallWords(), seed: 1)
+        dealer.targetWord = "voice"
+        XCTAssertEqual(dealer.targetLetter(chars("zvoxxice")), "x", "the pair is shot next")
+        XCTAssertEqual(dealer.targetLetter(chars("zvoxxce")), "i", "the missing letter comes first")
+        XCTAssertNil(dealer.targetLetter(chars("zvoxice")), "a single letter is not a pair")
+    }
+
+    func testGeneratorSplitsStemsWithPairs() {
+        let generator = ChainGenerator(words: smallWords(), seed: 9)
+        generator.targetMissing = 0
+        generator.targetBlockers = 2
+        let stem = generator.makeTargetStem(chars("voice"))
+        XCTAssertEqual(stem.count, 9)
+        XCTAssertEqual(stem.filter { "voice".contains($0) }, chars("voice"))
+        XCTAssertEqual(stem.first, "v")
+        XCTAssertEqual(stem.last, "e")
+    }
+
+    func testPiecesOfTheTargetAreHeldBack() {
+        let words = WordList()
+        words.addSeedWords(["list", "nets"])
+        words.addPopWords(["listen"])
+        XCTAssertEqual(words.pieces(of: "listen"), ["list", "nets"])
+        words.heldBack = words.pieces(of: "listen")
+        XCTAssertFalse(words.isWord("list"))
+        XCTAssertTrue(words.isWord("listen"))
+    }
+
     // MARK: Hints
 
     func testWordSpotsFindWhereALetterFits() {

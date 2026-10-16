@@ -16,8 +16,9 @@ import SwiftUI
 /// the chain turned a corner.
 ///
 /// Goal: clear every bubble, or spell the level's hidden word, which ends the
-/// level at once with a bonus for every bubble left. Copies of the word with
-/// one letter missing are planted in the chain, and hints mark them in cyan.
+/// level at once with a bonus for every bubble left. Copies of the word are
+/// planted in the chain, harder to finish each level (see applyTargetLadder),
+/// and hints mark the shots that finish them in cyan.
 ///
 /// Hints: bubbles that the shooter's letter can turn into a common word glow,
 /// with a small copy of the letter in the gap it belongs in. While aiming,
@@ -265,12 +266,15 @@ final class GameScene: SKScene {
         targetWord = placeholderMessage[(n - 1) % placeholderMessage.count]
         foundTarget = false
         generator.targetWord = targetWord
+        applyTargetLadder(n, generator)
+        words.heldBack = words.pieces(of: targetWord)
         queue = generator.generate(count: Int(lerp(50, 120, t).rounded()))
         dealer = LetterDealer(words: words, seed: seed &+ 2)
         dealer.helpRate = lerp(0.8, 0.4, t)
         dealer.pityLimit = Int(lerp(2, 4, t).rounded())
         dealer.allowBackward = allowBackward
         dealer.targetWord = targetWord
+        dealer.targetRate = n == 1 ? 0.85 : 0.5
         chainSpeed = lerp(40, 90, t)
         letters = []
         headS = 0
@@ -283,6 +287,24 @@ final class GameScene: SKScene {
         current = dealer.deal(preview, alphabet: alphabet)
         upcoming = [dealer.deal(preview, alphabet: alphabet), dealer.deal(preview, alphabet: alphabet)]
         refreshHUD()
+    }
+
+    /// How hard the hidden word is to pop, by level. Level 1 is just the
+    /// word split by runs of one letter; then the copies are split by pairs,
+    /// then missing a letter, then missing a letter and split by one or two
+    /// pairs, so popping the word takes a chain reaction.
+    private func applyTargetLadder(_ n: Int, _ generator: ChainGenerator) {
+        generator.targetSpaced = n == 1
+        switch n {
+        case ...2:
+            (generator.targetMissing, generator.targetBlockers, generator.targetCopies) = (0, 1, 3)
+        case 3...4:
+            (generator.targetMissing, generator.targetBlockers, generator.targetCopies) = (1, 0, 3)
+        case 5...7:
+            (generator.targetMissing, generator.targetBlockers, generator.targetCopies) = (1, 1, 2)
+        default:
+            (generator.targetMissing, generator.targetBlockers, generator.targetCopies) = (1, 2, 2)
+        }
     }
 
     private func buildTrack(_ n: Int, seed: UInt64) {
@@ -735,7 +757,10 @@ final class GameScene: SKScene {
         let flips = flipTest()
         // The hidden word is always hinted, first, even when it isn't common.
         let spots = Hints.wordSpots(for: current, in: letters, words: words, allowBackward: allowBackward, flips: flips)
-        hintSpots = spots.filter { isTarget($0) } + spots.filter { $0.common && !isTarget($0) }
+        // Shots whose chain reaction finishes the hidden word count as well.
+        let chained = Hints.targetChainSpots(for: current, in: letters, target: targetWord, words: words,
+                                             allowBackward: allowBackward, flips: flips)
+        hintSpots = chained + spots.filter { isTarget($0) } + spots.filter { $0.common && !isTarget($0) }
         nextLetterHasSpots = next.map {
             Hints.wordSpots(for: $0, in: letters, words: words, allowBackward: allowBackward, flips: flips)
                 .contains(where: { $0.common || isTarget($0) })

@@ -12,6 +12,16 @@ public final class ChainGenerator {
     /// planted along the chain so the player can spell it.
     public var targetWord: String?
     public var targetCopies = 3
+    /// Letters left out of each planted copy (0 or 1).
+    public var targetMissing = 1
+    /// Pairs of a matching letter planted inside each copy. Popping a pair
+    /// (shooting its letter to make a triple) closes the gap, so the word
+    /// forms as a chain reaction.
+    public var targetBlockers = 0
+    /// First-level mode: the chain is just the target's letters with a run
+    /// of one filler letter before, between and after them, so popping the
+    /// runs spells the word.
+    public var targetSpaced = false
 
     private let words: WordList
     private var rng: SeededGenerator
@@ -24,6 +34,9 @@ public final class ChainGenerator {
     }
 
     public func generate(count: Int) -> [Character] {
+        if targetSpaced, let target = targetWord, !target.isEmpty {
+            return makeSpacedTarget(Array(target))
+        }
         var out: [Character] = []
         while out.count < count {
             out.append(contentsOf: makeBlock())
@@ -39,8 +52,7 @@ public final class ChainGenerator {
         guard let target = targetWord, target.count >= 2 else { return [] }
         var protected = Set<Int>()
         for k in 0..<targetCopies {
-            var stem = Array(target)
-            stem.remove(at: Int.random(in: 0..<stem.count, using: &rng))
+            let stem = makeTargetStem(Array(target))
             let start = letters.count * (k + 1) / (targetCopies + 1) - stem.count / 2
             guard start >= 0, start + stem.count <= letters.count else { continue }
             for (j, c) in stem.enumerated() {
@@ -49,6 +61,46 @@ public final class ChainGenerator {
             }
         }
         return protected
+    }
+
+    /// The target with `targetMissing` letters removed and `targetBlockers`
+    /// pairs inserted between its letters.
+    func makeTargetStem(_ target: [Character]) -> [Character] {
+        // Gaps between letters (1..<count) that get a pair, chosen before the
+        // missing letter is removed so pairs stay inside the word.
+        var gaps = Array(1..<target.count)
+        gaps.shuffle(using: &rng)
+        let blockerGaps = Set(gaps.prefix(targetBlockers))
+        let missing = targetMissing > 0 ? Int.random(in: 0..<target.count, using: &rng) : -1
+        var stem: [Character] = []
+        for (i, c) in target.enumerated() {
+            if blockerGaps.contains(i) {
+                let before = target[i - 1]
+                // A letter that isn't in the word, so its pair can't merge with a word letter.
+                // Also unlike the last pair, in case the letter between them is the missing one.
+                let pool = alphabet.filter { !target.contains($0) && $0 != before && $0 != c && $0 != stem.last }
+                let x = pool.isEmpty ? filler.randomLetter(alphabet) : pool[Int.random(in: 0..<pool.count, using: &rng)]
+                stem.append(contentsOf: [x, x])
+            }
+            if i != missing {
+                stem.append(c)
+            }
+        }
+        return stem
+    }
+
+    /// The target's letters separated by runs (3 to 5) of one letter that
+    /// isn't in it, like AAAHAAAAEAAAARAAAAOAAAA.
+    func makeSpacedTarget(_ target: [Character]) -> [Character] {
+        let spacer = alphabet.first { !target.contains($0) }
+            ?? Array("abcdefghijklmnopqrstuvwxyz").first { !target.contains($0) } ?? "a"
+        var out: [Character] = []
+        for c in target {
+            out.append(contentsOf: Array(repeating: spacer, count: Int.random(in: 3...5, using: &rng)))
+            out.append(c)
+        }
+        out.append(contentsOf: Array(repeating: spacer, count: Int.random(in: 3...5, using: &rng)))
+        return out
     }
 
     private func makeBlock() -> [Character] {
