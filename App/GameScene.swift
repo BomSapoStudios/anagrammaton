@@ -274,7 +274,8 @@ final class GameScene: SKScene {
         dealer.pityLimit = Int(lerp(2, 4, t).rounded())
         dealer.allowBackward = allowBackward
         dealer.targetWord = targetWord
-        dealer.targetRate = n == 1 ? 0.85 : 0.5
+        // Level 1 deals only the spacer, so every shot clears a run.
+        dealer.onlyLetter = generator.spacer
         chainSpeed = lerp(40, 90, t)
         letters = []
         headS = 0

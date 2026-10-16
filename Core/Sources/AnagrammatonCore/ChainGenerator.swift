@@ -22,6 +22,8 @@ public final class ChainGenerator {
     /// of one filler letter before, between and after them, so popping the
     /// runs spells the word.
     public var targetSpaced = false
+    /// The letter of the runs in a spaced chain, once generated.
+    public private(set) var spacer: Character?
 
     private let words: WordList
     private var rng: SeededGenerator
@@ -90,10 +92,12 @@ public final class ChainGenerator {
     }
 
     /// The target's letters separated by runs (3 to 5) of one letter that
-    /// isn't in it, like AAAHAAAAEAAAARAAAAOAAAA.
+    /// isn't in it, like RRRHRRRRERRRRARRRROR. The spacer is a consonant,
+    /// so it can't make words with the target's letters as a vowel would.
     func makeSpacedTarget(_ target: [Character]) -> [Character] {
-        let spacer = alphabet.first { !target.contains($0) }
-            ?? Array("abcdefghijklmnopqrstuvwxyz").first { !target.contains($0) } ?? "a"
+        let vowels = Set("aeiouy")
+        let spacer = (alphabet + Array("bcdfghjklmnpqrstvwxz")).first { !target.contains($0) && !vowels.contains($0) } ?? "z"
+        self.spacer = spacer
         var out: [Character] = []
         for c in target {
             out.append(contentsOf: Array(repeating: spacer, count: Int.random(in: 3...5, using: &rng)))

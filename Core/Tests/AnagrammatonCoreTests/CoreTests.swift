@@ -165,10 +165,13 @@ final class CoreTests: XCTestCase {
         generator.targetWord = "crane"
         generator.targetSpaced = true
         let chain = generator.generate(count: 60)
+        XCTAssertEqual(generator.spacer, "t", "the first consonant in the alphabet that isn't in the word")
         XCTAssertEqual(chain.filter { $0 != "t" }, chars("crane"), "word letters split only by runs of one spacer")
         let dealer = LetterDealer(words: smallWords(), seed: 1)
         dealer.targetWord = "crane"
         XCTAssertEqual(dealer.targetLetter(chain), "t")
+        dealer.onlyLetter = "t"
+        XCTAssertEqual(dealer.deal(chars("crane"), alphabet: Array("xyz")), "t")
         // Popping every run but one, then the last, spells the word.
         let letters = chars("tttcrattne")
         let spots = Hints.targetChainSpots(for: "t", in: letters, target: "crane", words: smallWords(),

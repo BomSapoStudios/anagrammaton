@@ -19,6 +19,8 @@ public final class LetterDealer {
     /// missing, the dealer often hands over that letter.
     public var targetWord: String?
     public var targetRate = 0.5
+    /// When set, every deal is this letter (the first level's spacer).
+    public var onlyLetter: Character?
 
     private let words: WordList
     private var rng: SeededGenerator
@@ -62,6 +64,9 @@ public final class LetterDealer {
     }
 
     public func deal(_ letters: [Character], alphabet: [Character], flips: FlipTest? = nil) -> Character {
+        if let onlyLetter {
+            return onlyLetter
+        }
         if let missing = targetLetter(letters), rng.unit() < targetRate {
             dryStreak = 0
             return missing
