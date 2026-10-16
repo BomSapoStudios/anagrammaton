@@ -226,6 +226,58 @@ enum StoneStyle {
         return SKTexture(image: image)
     }
 
+    /// A river bank seen from above: damp earth, scattered pebbles and tufts
+    /// of grass, for the river levels where the track is the water.
+    static func riverBank(size: CGSize) -> SKTexture {
+        let image = renderer(size, scale: 1).image { ctx in
+            let cg = ctx.cgContext
+            let base = makeGradient([rgb(0x5A4C38), rgb(0x3B3226), rgb(0x2E3524)], [0, 0.6, 1])
+            cg.drawLinearGradient(base, start: .zero, end: CGPoint(x: size.width * 0.4, y: size.height), options: [])
+            var random = Lcg(seed: 11)
+            // Grain in the earth.
+            for _ in 0..<Int(size.width * size.height / 200) {
+                let shade = random.next() < 0.5 ? UIColor(white: 1, alpha: 0.04) : UIColor(white: 0, alpha: 0.1)
+                cg.setFillColor(shade.cgColor)
+                let r = 0.8 + 1.8 * random.next()
+                cg.fillEllipse(in: CGRect(x: random.next() * size.width, y: random.next() * size.height, width: r, height: r))
+            }
+            // Pebbles, each with a shadow below and a sheen on top.
+            let pebbles = [rgb(0x8C877C), rgb(0xA6957A), rgb(0x67625A), rgb(0x8A6C50), rgb(0x9A9A92)]
+            for _ in 0..<Int(size.width * size.height / 2600) {
+                let w = 5 + 16 * random.next() * random.next()
+                let h = w * (0.6 + 0.35 * random.next())
+                let rect = CGRect(x: random.next() * size.width, y: random.next() * size.height, width: w, height: h)
+                let color = pebbles[Int(random.next() * CGFloat(pebbles.count)) % pebbles.count]
+                cg.setFillColor(UIColor(white: 0, alpha: 0.35).cgColor)
+                cg.fillEllipse(in: rect.offsetBy(dx: w * 0.12, dy: h * 0.18))
+                cg.setFillColor(color.withAlphaComponent(0.85).cgColor)
+                cg.fillEllipse(in: rect)
+                cg.setFillColor(UIColor(white: 1, alpha: 0.18).cgColor)
+                cg.fillEllipse(in: CGRect(x: rect.minX + w * 0.18, y: rect.minY + h * 0.12, width: w * 0.4, height: h * 0.3))
+            }
+            // Tufts of grass.
+            cg.setLineCap(.round)
+            for _ in 0..<Int(size.width * size.height / 9000) {
+                let root = CGPoint(x: random.next() * size.width, y: random.next() * size.height)
+                let green = UIColor(red: 0.3 + 0.1 * random.next(), green: 0.42 + 0.12 * random.next(), blue: 0.2, alpha: 0.7)
+                cg.setStrokeColor(green.cgColor)
+                for _ in 0..<5 {
+                    let angle = -CGFloat.pi / 2 + (random.next() - 0.5) * 1.4
+                    let length = 8 + 12 * random.next()
+                    cg.setLineWidth(1 + random.next())
+                    cg.move(to: root)
+                    cg.addLine(to: CGPoint(x: root.x + cos(angle) * length, y: root.y + sin(angle) * length))
+                    cg.strokePath()
+                }
+            }
+            let c = CGPoint(x: size.width / 2, y: size.height / 2)
+            let vignette = makeGradient([UIColor(white: 0, alpha: 0), UIColor(white: 0, alpha: 0.6)], [0.4, 1])
+            cg.drawRadialGradient(vignette, startCenter: c, startRadius: 0, endCenter: c,
+                                  endRadius: hypot(size.width, size.height) / 2, options: [.drawsAfterEndLocation])
+        }
+        return SKTexture(image: image)
+    }
+
     // MARK: - Drawing
 
     private static func drawMarble(_ stone: Stone, seed: UInt64) -> UIImage {

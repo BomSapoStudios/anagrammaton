@@ -93,6 +93,15 @@ final class GameScene: SKScene {
 
     private let trackNode = SKShapeNode()
     private let trackEdge = SKShapeNode()
+    /// Lighter water down the middle of a river track.
+    private let trackCurrent = SKShapeNode()
+    /// Ripples drifting down a river track toward the hole.
+    private let ripples = SKShapeNode()
+    private var trackPath: CGPath?
+    private var ripplePhase = 0.0
+    private var river = false
+    private let board = SKSpriteNode()
+    private var boardIsRiver: Bool?
     private let holeNode = SKShapeNode(circleOfRadius: 38)
     private let aimLine = SKShapeNode()
     private let shooterBase = SKShapeNode(circleOfRadius: 38)
@@ -156,20 +165,14 @@ final class GameScene: SKScene {
     }
 
     override func didMove(to view: SKView) {
-        let board = SKSpriteNode(texture: StoneStyle.board(size: size))
         board.size = size
         board.position = CGPoint(x: size.width / 2, y: size.height / 2)
         board.zPosition = -30
         addChild(board)
-        // The track is a groove cut into the slate: a dark edge around a lighter floor.
-        let grooves: [(SKShapeNode, Double, UIColor)] = [(trackEdge, 1.3, UIColor(white: 0, alpha: 0.5)),
-                                     (trackNode, 1.12, StoneStyle.rgb(0x26282C))]
-        for (node, width, color) in grooves {
-            node.strokeColor = color
-            node.lineWidth = CGFloat(diameter * width)
+        for (node, z) in [(trackEdge, -22.0), (trackNode, -21.0), (trackCurrent, -20.5), (ripples, -20.0)] {
             node.lineCap = .round
             node.lineJoin = .round
-            node.zPosition = node === trackEdge ? -21 : -20
+            node.zPosition = CGFloat(z)
             addChild(node)
         }
         holeNode.fillColor = .black
@@ -331,8 +334,13 @@ final class GameScene: SKScene {
         }
         let path = CGMutablePath()
         path.addLines(between: track.points.map(scenePoint))
+        trackPath = path
         trackNode.path = path
         trackEdge.path = path
+        trackCurrent.path = path
+        // The first chapter's levels (before the spiral) run down a river.
+        river = n < rotatingShooterFromLevel
+        applyBackdrop()
         holeNode.position = scenePoint(track.points[track.points.count - 1])
         shooterBase.position = scenePoint(shooter)
         shooterBubble.position = scenePoint(shooter)
@@ -340,6 +348,49 @@ final class GameScene: SKScene {
             // Just below the shooter, inside the gap a spiral's hole leaves.
             node.position = scenePoint(shooter + Vec2(diameter * 0.55 * Double(2 * k - 1), diameter * 1.2))
         }
+    }
+
+    /// Slate with a groove cut into it, or a river bank with the track as
+    /// water, for this level.
+    private func applyBackdrop() {
+        guard board.parent != nil else { return }
+        if boardIsRiver != river {
+            board.texture = river ? StoneStyle.riverBank(size: size) : StoneStyle.board(size: size)
+            boardIsRiver = river
+        }
+        let d = CGFloat(diameter)
+        if river {
+            // Wet sand at the edge, deep water, a lighter current down the middle.
+            trackEdge.strokeColor = StoneStyle.rgb(0x2A261E).withAlphaComponent(0.8)
+            trackEdge.lineWidth = d * 1.5
+            trackNode.strokeColor = StoneStyle.rgb(0x245E69)
+            trackNode.lineWidth = d * 1.24
+            trackCurrent.strokeColor = StoneStyle.rgb(0x3F8E96).withAlphaComponent(0.55)
+            trackCurrent.lineWidth = d * 0.6
+            ripples.strokeColor = UIColor(white: 1, alpha: 0.22)
+            ripples.lineWidth = 3
+            holeNode.strokeColor = StoneStyle.rgb(0x6E7F6A)
+        } else {
+            // A groove cut into the slate: a dark edge around a lighter floor.
+            trackEdge.strokeColor = UIColor(white: 0, alpha: 0.5)
+            trackEdge.lineWidth = d * 1.3
+            trackNode.strokeColor = StoneStyle.rgb(0x26282C)
+            trackNode.lineWidth = d * 1.12
+            holeNode.strokeColor = StoneStyle.brass
+        }
+        trackCurrent.isHidden = !river
+        ripples.isHidden = !river
+    }
+
+    /// Moves the river's ripples along the track toward the hole.
+    private func updateRipples(_ dt: Double) {
+        guard river, let trackPath else { return }
+        let pattern = [CGFloat(16), CGFloat(52)]
+        ripplePhase -= max(chainSpeed, 40) * 1.5 * dt
+        if ripplePhase < 0 {
+            ripplePhase += 68
+        }
+        ripples.path = trackPath.copy(dashingWithPhase: CGFloat(ripplePhase), lengths: pattern)
     }
 
     // MARK: - Frame update
@@ -355,6 +406,7 @@ final class GameScene: SKScene {
             updateShot(dt)
             checkEnd()
         }
+        updateRipples(dt)
         render()
     }
 
